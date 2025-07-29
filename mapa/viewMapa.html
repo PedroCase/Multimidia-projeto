@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapa Procedural</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            background: #fafafa;
+        }
+    </style>
+    <script src="geracao.js"></script> 
+</head>
+<body>
+<canvas id="mapa" width="800" height="600"></canvas>
+
+<p>
+🎨 Legenda:
+🔵 inicial
+⚫ final
+🟡 tesouro (folhas)
+🟢 corredor
+🟣 puzzle
+🔴 inimigos
+⚪ normal
+</p>
+
+<script>
+
+function desenharMapa(salas) {
+    const canvas = document.getElementById("mapa");
+    const ctx = canvas.getContext("2d");
+
+    // Posiciona salas em círculo
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const raio = 200;
+    const anguloStep = (2 * Math.PI) / salas.length;
+
+    salas.forEach((sala, i) => {
+        sala.pos.x = centerX + raio * Math.cos(i * anguloStep);
+        sala.pos.y = centerY + raio * Math.sin(i * anguloStep);
+    });
+
+    // Conexões
+    ctx.lineWidth = 2;
+    for (const sala of salas) {
+        for (const viz of sala.vizinhas) {
+            if (sala.id < viz.sala.id) {
+                ctx.beginPath();
+                ctx.strokeStyle = viz.travada ? "red" : "#999";
+                ctx.moveTo(sala.pos.x, sala.pos.y);
+                ctx.lineTo(viz.sala.pos.x, viz.sala.pos.y);
+                ctx.stroke();
+
+                // Se trancada, desenha 🔒 com número da chave
+                if (viz.travada && viz.chaveId) {
+                    const mx = (sala.pos.x + viz.sala.pos.x) / 2;
+                    const my = (sala.pos.y + viz.sala.pos.y) / 2;
+                    ctx.fillStyle = "black";
+                    ctx.font = "14px sans-serif";
+                    ctx.textAlign = "center";
+                    ctx.fillText(`🔒${viz.chaveId.split('_')[1]}`, mx, my);
+                }
+            }
+        }
+    }
+
+    // Cores por tipo
+    const cores = {
+        inicial: "blue",
+        final: "black",
+        tesouro: "gold",
+        corredor: "green",
+        puzzle: "purple",
+        inimigos: "crimson",
+        normal: "#aaa"
+    };
+
+    // Salas
+    for (const sala of salas) {
+        // Desenha círculo
+        ctx.beginPath();
+        ctx.fillStyle = cores[sala.tipo] || "gray";
+        ctx.arc(sala.pos.x, sala.pos.y, 15, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = "black";
+        ctx.stroke();
+
+        // ID da sala
+        ctx.fillStyle = "white";
+        ctx.font = "10px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(sala.id, sala.pos.x, sala.pos.y + 3);
+
+        // Chave na sala (🔑X)
+        if (sala.chave) {
+            ctx.fillStyle = "black";
+            ctx.font = "14px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(`🔑${sala.chave.split('_')[1]}`, sala.pos.x, sala.pos.y - 20);
+        }
+    }
+}
+
+
+const salas = gerarMapa(1234);
+desenharMapa(salas);
+mostrarMapa(salas)
+
+function update(){
+
+}
+
+
+</script>
+</body>
+</html>
