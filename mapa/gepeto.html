@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapa 2D Exploração Interativa</title>
+    <style>
+        canvas { border: 1px solid #000; background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <canvas id="mapa" width="600" height="400"></canvas>
+    <script>
+        // Pseudo-random com seed
+        function RandomSeed(seed) {
+            let m=2**32,a=1664525,c=1013904223,s=seed;
+            return ()=>{ s=(a*s+c)%m; return s; };
+        }
+        class Sala {
+            constructor(id){
+                this.id = id;
+                this.vizinhas = [];
+                this.tipo = 'normal';
+                this.chave = null;
+                this.final = false;
+                this.pos = { x:0, y:0 };
+            }
+            conectar(sala, travada=false, chaveId=null){
+                this.vizinhas.push({ sala, travada, chaveId, dir:null, area:null, dest:null });
+                sala.vizinhas.push({ sala:this, travada, chaveId, dir:null, area:null, dest:null });
+            }
+        }
+        function bfs(salas, inicio=0, travas=new Set()){
+            const fila=[inicio], vis=new Set([inicio]), prof={ [inicio]:0 }, ant={};
+            while(fila.length){
+                const u=fila.shift();
+                salas[u].vizinhas.forEach(v=>{
+                    const id=v.sala.id;
+                    const bloqueada = v.travada && !travas.has(v.chaveId);
+                    if(!vis.has(id) && !bloqueada){
+                        vis.add(id);
+                        prof[id]=prof[u]+1;
+                        ant[id]=u;
+                        fila.push(id);
+                    }
+                });
+            }
+            return { profundidade: prof, anterior: ant, acessiveis: vis };
+        }
+        const MAX=25, MIN=7;
+        function gerarMapa(seed){
+            const rand=RandomSeed(seed);
+            const q=MIN + (rand() % (MAX-MIN+1));
+            const t=2 + (rand() % (1+Math.floor(q/3)));
+            const c=2 + (rand() % (1+(q-t)));
+            const salas=[];
+            for(let i=0;i<q;i++) salas.push(new Sala(i));
+            const arestas=[];
+            for(let i=1;i<q;i++){ const j=rand()%i; salas[i].conectar(salas[j]); arestas.push([i,j]); }
+            const travas=new Set(), portas=[];
+            for(let k=0;k<t;k++){
+                let a,b,idx;
+                do{ idx=rand()%arestas.length; [a,b]=arestas[idx]; }
+                while(salas[a].vizinhas.find(v=>v.sala.id===b).travada);
+                const chaveId=`chave_${k}`;
+                salas[a].vizinhas.forEach(v=>{ if(v.sala.id===b) { v.travada=true; v.chaveId=chaveId; }});
+                salas[b].vizinhas.forEach(v=>{ if(v.sala.id===a) { v.travada=true; v.chaveId=chaveId; }});
+                portas.push({a,b,chaveId});
+                const acc=bfs(salas,0,travas).acessiveis;
+                const poss=Array.from(acc).filter(id=>id!==a && id!==b);
+                salas[poss[rand()%poss.length]].chave=chaveId;
+                travas.add(chaveId);
+            }
+            let reg=Array.from(bfs(salas,0,travas).acessiveis), con=new Set();
+            for(let i=0;i<c;i++){
+                let a,b;
+                do{ a=reg[rand()%reg.length]; b=reg[rand()%reg.length]; }
+                while(a===b || con.has(`${a},${b}`) || salas[a].vizinhas.find(v=>v.sala.id===b));
+                salas[a].conectar(salas[b]); con.add(`${a},${b}`);
+            }
+            // definir final em ramo da última porta
+            const ultima = portas[portas.length-1];
+            const inicial = bfs(salas,0,new Set()).acessiveis;
+            const ramo = salas.map(s=>s.id).filter(id=>!inicial.has(id));
+            const prof = bfs(salas, ultima.b, travas).profundidade;
+            let sf=ramo[0], mp=-1;
+            ramo.forEach(id=>{ if(prof[id]>mp){ mp=prof[id]; sf=id;} });
+            salas[sf].final=true;
+            return salas;
+        }
+        function classificar(salas){
+            salas.forEach(s=>{
+                if(s.id===0) s.tipo='inicial';
+                else if(s.final) s.tipo='final';
+                else if(s.vizinhas.length===1) s.tipo='tesouro';
+                else if(s.vizinhas.length>=3) s.tipo='corredor';
+                else s.tipo='puzzle';
+                if(s.chave && s.tipo!=='inicial') s.tipo='inimigos';
+            });
+        }
+        function layout(salas){
+            const res=bfs(salas);
+            const levels={};
+            Object.entries(res.profundidade).forEach(([id,l])=>{
+                levels[l] = levels[l]||[]; levels[l].push(+id);
+            });
+            const gapX=200, gapY=150;
+            Object.entries(levels).forEach(([lvl,arr])=>{
+                arr.forEach((id,i)=>{
+                    salas[id].pos.x = 50 + lvl*gapX;
+                    salas[id].pos.y = 50 + i*gapY;
+                });
+            });
+        }
+        // inicializa mapa e dados
+        const salas = gerarMapa(123);
+        classificar(salas);
+        layout(salas);
+        let current = 0;
+        // player
+        const player = { size:10, x:0, y:0 };
+        const canvas = document.getElementById('mapa');
+        const ctx = canvas.getContext('2d');
+        const roomW=200, roomH=150;
+        const offsetX=(canvas.width-roomW)/2, offsetY=(canvas.height-roomH)/2;
+        const colors={ inicial:'blue', final:'black', tesouro:'gold', corredor:'green', puzzle:'purple', inimigos:'red', miniboss:'orange' };
+        let doors = [];
+        // configura player na sala inicial centro
+        function enterRoom(id, fromDir=null){
+            current = id;
+            // posição inicial
+            if(fromDir==='up')      { player.x = offsetX + roomW/2; player.y = offsetY + roomH - player.size; }
+            else if(fromDir==='down'){ player.x = offsetX + roomW/2; player.y = offsetY + player.size; }
+            else if(fromDir==='left'){ player.x = offsetX + roomW - player.size; player.y = offsetY + roomH/2; }
+            else if(fromDir==='right'){ player.x = offsetX + player.size; player.y = offsetY + roomH/2; }
+            else { player.x = offsetX + roomW/2; player.y = offsetY + roomH/2; }
+            draw();
+        }
+        function draw(){
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            const s = salas[current];
+            // sala
+            ctx.fillStyle=colors[s.tipo]||'gray';
+            ctx.fillRect(offsetX,offsetY,roomW,roomH);
+            ctx.strokeRect(offsetX,offsetY,roomW,roomH);
+            // chave
+            if(s.chave){ ctx.fillStyle='white'; ctx.fillText('🔑'+s.chave.split('_')[1], offsetX+roomW/2-5, offsetY+roomH/2); }
+            // portas
+            doors = [];
+            s.vizinhas.forEach(v=>{
+                const dir = v.areaDir;
+                let px,py;
+                if(dir==='up'){ px=offsetX+roomW/2; py=offsetY; }
+                if(dir==='down'){ px=offsetX+roomW/2; py=offsetY+roomH; }
+                if(dir==='left'){ px=offsetX; py=offsetY+roomH/2; }
+                if(dir==='right'){ px=offsetX+roomW; py=offsetY+roomH/2; }
+                // desenha porta como retângulo fino
+                ctx.fillStyle='#654321';
+                if(dir==='up' || dir==='down') ctx.fillRect(px-10,py-5,20,10);
+                else ctx.fillRect(px-5,py-10,10,20);
+                if(v.travada){ ctx.fillStyle='white'; ctx.fillText('🔒'+v.chaveId.split('_')[1], px-5, dir==='up'?py-10:dir==='down'?py+20:dir==='left'?py-10:py+20); }
+                doors.push({ x:px, y:py, dir:dir, dest:v.sala.id });
+            });
+            // jogador
+            ctx.fillStyle='white';
+            ctx.fillRect(player.x-player.size/2, player.y-player.size/2, player.size, player.size);
+        }
+        // atribui direções aos vizinhos
+        salas.forEach(s=>{
+            s.vizinhas.forEach(v=>{
+                const target = v.sala;
+                const dx = target.pos.x - s.pos.x;
+                const dy = target.pos.y - s.pos.y;
+                if(Math.abs(dx)>Math.abs(dy)) v.areaDir = dx>0?'right':'left';
+                else v.areaDir = dy>0?'down':'up';
+            });
+        });
+        // movimento
+        document.addEventListener('keydown', e=>{
+            const speed = 5;
+            let moved=false;
+            if(e.key==='ArrowUp'&& player.y-player.size/2>offsetY){ player.y-=speed; moved=true; }
+            if(e.key==='ArrowDown'&& player.y+player.size/2<offsetY+roomH){ player.y+=speed; moved=true; }
+            if(e.key==='ArrowLeft'&& player.x-player.size/2>offsetX){ player.x-=speed; moved=true; }
+            if(e.key==='ArrowRight'&& player.x+player.size/2<offsetX+roomW){ player.x+=speed; moved=true; }
+            if(moved){
+                // checa colisão com portas
+                doors.forEach(d=>{
+                    const dx=Math.abs(player.x-d.x), dy=Math.abs(player.y-d.y);
+                    if((d.dir==='up'||d.dir==='down')? dx<10 && dy<10 : dx<10 && dy<10){
+                        enterRoom(d.dest, d.dir);
+                    }
+                });
+                draw();
+            }
+        });
+        // entrar na sala inicial
+        enterRoom(0);
+    </script>
+</body>
+</html>

@@ -54,8 +54,8 @@ function bfs(salas, inicio = 0, travas = new Set()) {
 
 const MAX_SALAS = 25;
 const MIN_SALAS = 7;
-const TIPOS_DE_SALA = ["puzzle", "tesouro", "inimigos", "miniboss", "corredor", "npcs"]
-const TIPOS_SALA_END = ["tesouro", "tesouro", "npcs"] //salas sem saída
+const TIPOS_DE_SALA = ["puzzle", "tesouro", "inimigos", "inimigos", "miniboss", "corredor", "npcs"]
+const TIPOS_SALA_END = ["tesouro", "tesouro", "tesouro", "npcs"] //salas sem saída
 
 /*
   Gera mapa completo, mantendo a sala final como parte de um ramo trancado por uma das chaves geradas.
@@ -175,9 +175,25 @@ function gerarMapa(seed) {
         // if (sala.chave && sala.tipo !== "inicial") sala.tipo = "inimigos";
     });
     
+    // gerar biomas
+    // escolhe alguns centros, um bioma aleatório e faz uma bfs multisorce.
+    // o bioma de uma sala é o bioma com o centro mais próximo
+
+    // gerar layout geral das salas
+    // tamanho, altura, posição das portas e itens
+    
+
+    // gerar aparência das salas.
+    // colocar tiles do chão, paredes, árvores, etc
+
+    // sala como uma matriz de tiles. 
+    // ou várias matrizes, cada uma como uma layer (exemplo, chão e decoração)
 
     return salas;
 }
+
+// criar função para renderizar o mapa, o jogador, os inimigos, etc...
+
 
 function mostrarMapa(salas) {
     for (const sala of salas) {
