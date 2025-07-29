@@ -12,17 +12,21 @@
     <script src="geracao.js"></script> 
 </head>
 <body>
+<label for="myInput">Seed:</label>
+<input type="numberInput" id="seedInput" value="1234">
+<button onclick="regerar(document.getElementById('seedInput').value)">recarregar</button>
+
 <canvas id="mapa" width="800" height="600"></canvas>
 
 <p>
 🎨 Legenda:
 🔵 inicial
 ⚫ final
-🟡 tesouro (folhas)
+🟡 tesouro
 🟢 corredor
 🟣 puzzle
 🔴 inimigos
-⚪ normal
+🟠 miniboss
 </p>
 
 <script>
@@ -30,6 +34,7 @@
 function desenharMapa(salas) {
     const canvas = document.getElementById("mapa");
     const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Posiciona salas em círculo
     const centerX = canvas.width / 2;
@@ -74,7 +79,8 @@ function desenharMapa(salas) {
         corredor: "green",
         puzzle: "purple",
         inimigos: "crimson",
-        normal: "#aaa"
+        normal: "#aaa",
+        miniboss: "orange"
     };
 
     // Salas
@@ -104,14 +110,13 @@ function desenharMapa(salas) {
 }
 
 
-const salas = gerarMapa(1234);
-desenharMapa(salas);
-mostrarMapa(salas)
-
-function update(){
-
+function regerar(seed){
+    salas = gerarMapa(seed);
+    desenharMapa(salas);
+    mostrarMapa(salas)
 }
 
+regerar(1234);
 
 </script>
 </body>

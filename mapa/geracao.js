@@ -54,7 +54,7 @@ function bfs(salas, inicio = 0, travas = new Set()) {
 
 const MAX_SALAS = 25;
 const MIN_SALAS = 7;
-const TIPOS_DE_SALA = ["puzzle", "tesouro", "inimigos", "corredor", "npcs"]
+const TIPOS_DE_SALA = ["puzzle", "tesouro", "inimigos", "miniboss", "corredor", "npcs"]
 const TIPOS_SALA_END = ["tesouro", "tesouro", "npcs"] //salas sem saída
 
 /*
