@@ -12,11 +12,15 @@
     <script src="geracao.js"></script> 
 </head>
 <body>
-<label for="myInput">Seed:</label>
-<input type="numberInput" id="seedInput" value="1234">
-<button onclick="regerar(document.getElementById('seedInput').value)">recarregar</button>
+    
+<canvas id="mapa" width="600" height="600"></canvas>
+<canvas id="layoutSala" width="400" height="400" style="border:1px solid black;"></canvas>
 
-<canvas id="mapa" width="800" height="600"></canvas>
+<div>    
+    <label for="myInput">Seed:</label>
+    <input type="numberInput" id="seedInput" value="1234">
+    <button onclick="regerar(document.getElementById('seedInput').value)">recarregar</button>
+</div>
 
 <p>
 🎨 Legenda:
@@ -31,12 +35,13 @@
 
 <script>
 
+
+
 function desenharMapa(salas) {
     const canvas = document.getElementById("mapa");
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Posiciona salas em círculo
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
     const raio = 200;
@@ -47,7 +52,6 @@ function desenharMapa(salas) {
         sala.pos.y = centerY + raio * Math.sin(i * anguloStep);
     });
 
-    // Conexões
     ctx.lineWidth = 2;
     for (const sala of salas) {
         for (const viz of sala.vizinhas) {
@@ -57,8 +61,6 @@ function desenharMapa(salas) {
                 ctx.moveTo(sala.pos.x, sala.pos.y);
                 ctx.lineTo(viz.sala.pos.x, viz.sala.pos.y);
                 ctx.stroke();
-
-                // Se trancada, desenha 🔒 com número da chave
                 if (viz.travada && viz.chaveId) {
                     const mx = (sala.pos.x + viz.sala.pos.x) / 2;
                     const my = (sala.pos.y + viz.sala.pos.y) / 2;
@@ -71,7 +73,6 @@ function desenharMapa(salas) {
         }
     }
 
-    // Cores por tipo
     const cores = {
         inicial: "blue",
         final: "black",
@@ -83,9 +84,7 @@ function desenharMapa(salas) {
         miniboss: "orange"
     };
 
-    // Salas
     for (const sala of salas) {
-        // Desenha círculo
         ctx.beginPath();
         ctx.fillStyle = cores[sala.tipo] || "gray";
         ctx.arc(sala.pos.x, sala.pos.y, 15, 0, 2 * Math.PI);
@@ -93,18 +92,105 @@ function desenharMapa(salas) {
         ctx.strokeStyle = "black";
         ctx.stroke();
 
-        // ID da sala
         ctx.fillStyle = "white";
         ctx.font = "10px sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(sala.id, sala.pos.x, sala.pos.y + 3);
 
-        // Chave na sala (🔑X)
         if (sala.chave) {
             ctx.fillStyle = "black";
             ctx.font = "14px sans-serif";
             ctx.textAlign = "center";
             ctx.fillText(`🔑${sala.chave.split('_')[1]}`, sala.pos.x, sala.pos.y - 20);
+        }
+    }
+
+    canvas.onclick = function (e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        for (const sala of salas) {
+            const dx = sala.pos.x - x;
+            const dy = sala.pos.y - y;
+            if (dx * dx + dy * dy < 15 * 15) {
+                desenharSalaDetalhada(sala);
+                break;
+            }
+        }
+    };
+}
+
+function desenharSalaDetalhada(sala) {
+    const canvas = document.getElementById("layoutSala");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const tileSize = canvas.width / sala.map.length;
+
+    for (let y = 0; y < sala.map.length; y++) {
+        for (let x = 0; x < sala.map[y].length; x++) {
+            const tile = sala.map[y][x];
+            let fill = "#000";
+
+            switch (tile) {
+                case TILES.WALL:
+                    fill = {
+                        caverna: "#444",
+                        floresta: "#2e5c2e",
+                        pantano: "#2c3f48",
+                        deserto: "#d2b48c",
+                    }[sala.bioma];
+                    break;
+
+                case TILES.FLOOR:
+                    fill = {
+                        caverna: "#888",
+                        floresta: "#cce5cc",
+                        pantano: "#99aabb",
+                        deserto: "#f4e4b2",
+                    }[sala.bioma];
+                    break;
+
+                case TILES.TREE:
+                    fill = sala.bioma === "pantano" ? "#446644" : "#228b22";
+                    break;
+
+                case TILES.DOOR:
+                    fill = "#ff9900";
+                    break;
+
+                case TILES.WATER:
+                    fill = sala.bioma === "pantano" ? "#336677" : "#3399ff";
+                    break;
+
+                case TILES.SAND:
+                    fill = sala.bioma === "deserto" ? "#ffe4a1" : "#d2b48c";
+                    break;
+
+                case TILES.ROCK:
+                    fill = "#664655";
+                    break;
+
+                case TILES.MUSHROOM:
+                    fill = "#cc00ff";
+                    break;
+
+                case TILES.MUD:
+                    fill = "#445c44";
+                    break;
+
+                case TILES.CACTUS:
+                    fill = "#227744";
+                    break;
+
+                default:
+                    fill = "red"; // tile desconhecida
+                    break;
+            }
+
+            ctx.fillStyle = fill;
+            ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+            ctx.strokeStyle = "#000";
+            ctx.strokeRect(x * tileSize, y * tileSize, tileSize, tileSize);
         }
     }
 }
@@ -113,7 +199,8 @@ function desenharMapa(salas) {
 function regerar(seed){
     salas = gerarMapa(seed);
     desenharMapa(salas);
-    mostrarMapa(salas)
+    mostrarMapa(salas);
+    desenharSalaDetalhada(salas[0]);
 }
 
 regerar(1234);
