@@ -59,6 +59,8 @@
         #game-container {
             display: flex;
             flex-wrap: wrap;
+            flex-direction: row;
+            align-items: flex-start;
             gap: 1rem;
             justify-content: center;
         }
@@ -438,8 +440,8 @@
 
             items = [];
             const possibleItems = [
-                { name: "Espada", type: "arma", effect: { attack: 5 }, symbol: '⚔️' },
-                { name: "Tomo Arcano", type: "magia", effect: { attack: 3, class: "Mago" }, symbol: '📖' },
+                { name: "Espada", type: "arma", effect: { attack: 5, attackPattern: 'default' }, symbol: '⚔️' },
+                { name: "Tomo Arcano", type: "magia", effect: { attack: 3, attackPattern: 'magia' }, symbol: '📖' },
                 { name: "Escudo", type: "defesa", effect: { maxHp: 20 }, symbol: '🛡️' },
                 { name: "Poção de Cura", type: "consumivel", effect: { heal: 25 }, symbol: '🧪' },
                 { name: "Lança", type: "arma", effect: { attack: 3, attackPattern: 'line' }, symbol: '🔱' },
@@ -529,6 +531,7 @@
 
             // Condição 3: Equipamento do jogador
             if (playerState.attackPattern === 'line') return "Essa 🔱 tem um otimo alcance!";
+            if (playerState.attackPattern === 'magia') return "Esse 📖 permite atacar inimigos distantes!";
             if (playerState.attackPattern === 'wide') return "Com essa ⛓️ voce acerta varios de uma vez!";
 
             // Condição 4: Falas genéricas de fallback
@@ -657,8 +660,18 @@
                     const p_dx_wide = dy; 
                     const p_dy_wide = -dx; 
                     tiles.push({ x: x + dx, y: y + dy });
+                    tiles.push({ x: x + dx * 2, y: y + dy * 2 });
                     tiles.push({ x: x + dx + p_dx_wide, y: y + dy + p_dy_wide });
                     tiles.push({ x: x + dx - p_dx_wide, y: y + dy - p_dy_wide });
+                    tiles.push({ x: x + dx * 2 + p_dx_wide, y: y + dy * 2 + p_dy_wide });
+                    tiles.push({ x: x + dx * 2 - p_dx_wide, y: y + dy * 2 - p_dy_wide });
+                    break;
+                case 'magia':
+                    tiles.push({ x: x + dx, y: y + dy });
+                    tiles.push({ x: x + dx * 2, y: y + dy * 2 });
+                    tiles.push({ x: x + dx * 3, y: y + dy * 3 });
+                    tiles.push({ x: x + dx * 4, y: y + dy * 4 });
+                    tiles.push({ x: x + dx * 5, y: y + dy * 5 });
                     break;
                 default:
                     for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
