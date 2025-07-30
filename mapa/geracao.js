@@ -17,7 +17,7 @@ const MAP_MAX_TILES = 60;
 const MAP_MIN_TILES = 30;
 const TIPOS_DE_SALA = ["puzzle", "tesouro", "inimigos", "inimigos", "miniboss", "corredor", "npcs"]
 const TIPOS_SALA_END = ["tesouro", "tesouro", "tesouro", "npcs"] //salas sem saída
-const TIPOS_BIOMAS = ["ruinas", "floresta", "pantano", "deserto", "ruinas", "floresta"]
+const TIPOS_BIOMAS = ["caverna", "floresta", "pantano", "deserto", "ruinas", "floresta"]
 // const TIPOS_BIOMAS = ["pantano"]
 const TILES = {
     WALL: 0,
@@ -43,7 +43,7 @@ class Sala {
         this.vizinhas = [];
         this.tipo = "normal";
         this.objetos = [];
-        this.chave = null;
+        this.chaves = [];
         this.final = false;
         this.travadaCom = null;
         this.pos = { x: 0, y: 0 };
@@ -130,7 +130,7 @@ function gerarMapa(seed) {
         do {
             idx = rand() % arestas.length;
             [a, b] = arestas[idx];
-        } while ((salas[a].travadaCom || salas[b].travadaCom) && ++tent < 100);
+        } while ((salas[a].travadaCom || salas[b].travadaCom) && ++tent < 1000);
 
         const chaveId = `chave_${k}`;
         // marca a porta bloqueada
@@ -148,7 +148,7 @@ function gerarMapa(seed) {
         const { acessiveis } = bfs(salas, 0, travas);
         const possiveis = Array.from(acessiveis).filter(id => id !== a && id !== b);
         const salaChave = salas[possiveis[rand() % possiveis.length]];
-        salaChave.chave = chaveId;
+        salaChave.chaves.push(chaveId);
         travas.add(chaveId);
 
         const doLadoDeCa = bfs(salas, 0).acessiveis
@@ -218,13 +218,6 @@ function gerarMapa(seed) {
     
     atribuirBiomas(salas, rand, 1 + rand()%Math.ceil(salas.length / 3))
     salas.forEach(sala => { generateMap(sala, rand) });
-    // gerar layout geral das salas
-    // tamanho, altura, posição das portas e itens
-    // sala como uma matriz de tiles. 
-    // ou várias matrizes, cada uma como uma layer (exemplo, chão e decoração)
-    
-    // gerar aparência das salas.
-    // colocar tiles do chão, paredes, árvores, etc
 
     return salas;
 }
@@ -257,7 +250,7 @@ function atribuirBiomas(salas, rand, numCentros = 4) {
 function mostrarMapa(salas) {
     for (const sala of salas) {
         let texto = `Sala ${sala.id}`;
-        if (sala.chave) texto += ` (tem chave: ${sala.chave})`;
+        if (sala.chaves.length > 0) texto += ` (tem chave: ${sala.chaves})`;
         if (sala.final) texto += ` [FINAL]`;
         texto += " {" + sala.tipo + "} " + ` block(${sala.nivelBloqueio}) bioma: ${sala.bioma}` 
         console.log(texto);
@@ -300,8 +293,8 @@ function getDoorPositions(map, P, rand) {
 
     // encontra um ponto de piso para BFS
     let start = null;
-    for (let y = 0; y < H; y++) {
-        for (let x = 0; x < W; x++) {
+    for (let y = Math.floor(H/2); y < H; y++) {
+        for (let x = Math.floor(W/2); x < W; x++) {
             if (floorTiles.has(map[y][x])) { start = [y, x]; break; }
         }
         if (start) break;

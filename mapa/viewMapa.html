@@ -97,11 +97,14 @@ function desenharMapa(salas) {
         ctx.textAlign = "center";
         ctx.fillText(sala.id, sala.pos.x, sala.pos.y + 3);
 
-        if (sala.chave) {
+        if (sala.chaves.length > 0) {
+            let txt = "";
+            for(let i=0; i<sala.chaves.length; i++) 
+                txt += sala.chaves[i].split('_')[1] + " ";
             ctx.fillStyle = "black";
             ctx.font = "14px sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText(`🔑${sala.chave.split('_')[1]}`, sala.pos.x, sala.pos.y - 20);
+            ctx.fillText(`🔑${txt}`, sala.pos.x, sala.pos.y - 20);
         }
     }
 
