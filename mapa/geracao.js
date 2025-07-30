@@ -17,7 +17,8 @@ const MAP_MAX_TILES = 60;
 const MAP_MIN_TILES = 30;
 const TIPOS_DE_SALA = ["puzzle", "tesouro", "inimigos", "inimigos", "miniboss", "corredor", "npcs"]
 const TIPOS_SALA_END = ["tesouro", "tesouro", "tesouro", "npcs"] //salas sem saída
-const TIPOS_BIOMAS = ["caverna", "floresta", "pantano", "deserto"]
+const TIPOS_BIOMAS = ["ruinas", "floresta", "pantano", "deserto", "ruinas", "floresta"]
+// const TIPOS_BIOMAS = ["pantano"]
 const TILES = {
     WALL: 0,
     FLOOR: 1,
@@ -32,6 +33,9 @@ const TILES = {
     LAVA: 18,
     ASH: 19,
 };
+const wallTiles = new Set([TILES.WALL, TILES.TREE, TILES.ROCK, TILES.BRICK, TILES.RUBBLE, TILES.LAVA, TILES.ASH]);
+const floorTiles = new Set([ TILES.FLOOR, TILES.MUD, TILES.SAND, // TILES.GRASS, TILES.PATH, TILES.STONE_FLOOR, 
+    ]);
 
 class Sala {
     constructor(id) {
@@ -270,16 +274,91 @@ function generateMap(sala, rand){
     let MAP_WIDTH_TILES = rangeRandom(MAP_MIN_TILES, MAP_MAX_TILES, rand);
 
     if(sala.bioma == "floresta") 
-        sala.map = generateFlorestMap(rand, MAP_HEIGHT_TILES, MAP_WIDTH_TILES); 
-    else if(sala.bioma == "pantano") 
+        sala.map = generateForestMap(rand, MAP_HEIGHT_TILES, MAP_WIDTH_TILES); 
+    else if(sala.bioma == "pantano"){
         sala.map = generateSwampMap(rand, MAP_HEIGHT_TILES, MAP_WIDTH_TILES); 
-    else if(sala.bioma == "deserto") 
+        sala.map = addWallBorder(sala.map);
+    }
+    else if(sala.bioma == "deserto"){
         sala.map = generateDesertMap(rand, MAP_HEIGHT_TILES, MAP_WIDTH_TILES); 
+        sala.map = addWallBorder(sala.map);
+    }
     else if(sala.bioma == "ruinas") 
         sala.map = generateRuinsMap(rand, MAP_HEIGHT_TILES, MAP_WIDTH_TILES); 
     else 
         sala.map = generateCaveMap(rand, MAP_HEIGHT_TILES, MAP_WIDTH_TILES);
+
+    let doors = getDoorPositions(sala.map, sala.vizinhas.length, rand);
+
+    console.log(doors);
+    for (const {x, y} of doors) sala.map[y][x] = TILES.DOOR;
 }
+
+function getDoorPositions(map, P, rand) {
+    const H = map.length;
+    const W = map[0].length;
+
+    // encontra um ponto de piso para BFS
+    let start = null;
+    for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+            if (floorTiles.has(map[y][x])) { start = [y, x]; break; }
+        }
+        if (start) break;
+    }
+    if (!start) return [];
+
+    // BFS para marcar área navegável
+    const visited = Array.from({ length: H }, () => Array(W).fill(false));
+    const queue = [start];
+    visited[start[0]][start[1]] = true;
+    const floorSet = new Set([start.toString()]);
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+
+    while (queue.length) {
+        const [y, x] = queue.shift();
+        for (const [dy, dx] of dirs) {
+            const ny = y + dy, nx = x + dx;
+            if (ny >= 0 && ny < H && nx >= 0 && nx < W && !visited[ny][nx] && floorTiles.has(map[ny][nx])) {
+                visited[ny][nx] = true;
+                floorSet.add([ny, nx].toString());
+                queue.push([ny, nx]);
+            }
+        }
+    }
+
+    // candidatos: wallTiles adjacente a floorSet
+    const candidates = [];
+    for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+            if (!wallTiles.has(map[y][x])) continue;
+            for (const [dy, dx] of dirs) {
+                const ny = y + dy, nx = x + dx;
+                if (ny >= 0 && ny < H && nx >= 0 && nx < W && floorSet.has([ny, nx].toString())) {
+                    candidates.push({ x, y });
+                    break;
+                }
+            }
+        }
+    }
+
+    // sample P únicos
+    const result = [];
+    const used = new Set();
+    if (candidates.length <= P) return candidates;
+
+    while (result.length < P) {
+        const idx = rand() % candidates.length;
+        const { x, y } = candidates[idx];
+        const key = `${x},${y}`;
+        if (!used.has(key)) {
+            used.add(key);
+            result.push({ x, y });
+        }
+    }
+    return result;
+}
+
 
 
 
@@ -288,252 +367,213 @@ function generateMap(sala, rand){
 ///////////////////////////////////
 
 /////////// MAPAS ////////////////
-
-function generateCaveMap(rand, MAP_HEIGHT_TILES, MAP_WIDTH_TILES){
-    let map = Array.from({ length: MAP_HEIGHT_TILES }, () => Array(MAP_WIDTH_TILES).fill(TILES.WALL));
-    
-    let floorTiles = 0;
-    const totalTiles = MAP_WIDTH_TILES * MAP_HEIGHT_TILES;
-    const targetFloorPercentage = 0.5;
-    let diggerX = Math.floor(MAP_WIDTH_TILES / 2);
-    let diggerY = Math.floor(MAP_HEIGHT_TILES / 2);
-    let totalTentativas = 0;
-
-    while (floorTiles < totalTiles * targetFloorPercentage && totalTentativas < 5*totalTiles) {
-        if (map[diggerY][diggerX] === TILES.WALL) {
-            map[diggerY][diggerX] = TILES.FLOOR;
-            floorTiles++;
-        }
-        totalTentativas++;
-        let tentou = 0;
-        do {
-            const directions = [[0, -1], [0, 1], [-1, 0], [1, 0]];
-            const [dx, dy] = directions[(rand() % directions.length)];
-            diggerX = Math.max(1, Math.min(MAP_WIDTH_TILES - 2, diggerX + dx));
-            diggerY = Math.max(1, Math.min(MAP_HEIGHT_TILES - 2, diggerY + dy));
-            tentou++;
-        } while(map[diggerY][diggerX] === TILES.FLOOR && tentou < 6);
+function addWallBorder(map) {
+    const H = map.length;
+    const W = map[0].length;
+    map[0] = Array(W).fill(TILES.WALL);
+    map[H - 1] = Array(W).fill(TILES.WALL);
+    for (let y = 1; y < H - 1; y++) {
+        map[y][0] = TILES.WALL;
+        map[y][W - 1] = TILES.WALL;
     }
-
-    return map;
-}
-
-function generateFlorestMap(rand, MAP_HEIGHT_TILES, MAP_WIDTH_TILES){
-    let map = Array.from({ length: MAP_HEIGHT_TILES }, () => Array(MAP_WIDTH_TILES).fill(TILES.TREE));
-
-    let floorTiles = 0;
-    const totalTiles = MAP_WIDTH_TILES * MAP_HEIGHT_TILES;
-    const targetFloorPercentage = 0.25;
-    let diggerX = Math.floor(MAP_WIDTH_TILES / 2);
-    let diggerY = Math.floor(MAP_HEIGHT_TILES / 2);
-    let totalTentativas = 0;
-
-    const fila = [];
-    const directions = [[0, -1], [0, 1], [-1, 0], [1, 0]];
-    let MAX_DIAMETER = Math.floor(Math.min(MAP_WIDTH_TILES, MAP_HEIGHT_TILES) * 1.7 / 3);
-    let MIN_DIAMETER = 5;
-
-    while (floorTiles < totalTiles * targetFloorPercentage && totalTentativas < 5*totalTiles) {
-        if (map[diggerY][diggerX] === TILES.TREE) {
-            map[diggerY][diggerX] = TILES.FLOOR;
-            floorTiles++;
-        }
-        totalTentativas++;
-        let tentou = 0;
-        
-        if(rand()%100 < 40) fila.push([diggerX, diggerY, rangeRandom(MIN_DIAMETER, MAX_DIAMETER, rand)]); //centro de clareiras
-        
-        do {
-            const [dx, dy] = directions[(rand() % directions.length)];
-            diggerX = Math.max(1, Math.min(MAP_WIDTH_TILES - 2, diggerX + dx));
-            diggerY = Math.max(1, Math.min(MAP_HEIGHT_TILES - 2, diggerY + dy));
-            tentou++;
-        } while(map[diggerY][diggerX] == TILES.FLOOR && tentou < 6);
-    }
-
-    const directions2 = [[0, -1], [0, 1], [-1, 0], [1, 0], [0, 2]];
-    while(fila.length > 0){
-        const [x, y, dist] = fila.shift();
-        map[y][x] = TILES.FLOOR;
-        
-        if(dist <= 0 || rand() % 100 < 40) continue;
-
-        for(const [dx, dy] of directions2){
-            if(0 >= x+dx || x+dx > MAP_WIDTH_TILES-3) continue;
-            if(0 >= y+dy || y+dy > MAP_HEIGHT_TILES-3) continue;
-            if(map[y+dy][x+dx] == TILES.FLOOR) continue;
-            
-            fila.push([x+dx, y+dy, dist-1]);
-        }
-    }
-
     return map;
 }
 
 
+// Geração de caverna via cellular automata
+function generateCaveMap(rand, H, W) {
+    let map = Array.from({ length: H }, () => Array(W).fill(TILES.WALL));
+    // inicializa aleatório
+    for (let y = 1; y < H - 1; y++)
+        for (let x = 1; x < W - 1; x++)
+            map[y][x] = (rand() % 100 < 45) ? TILES.WALL : TILES.FLOOR;
+    // iterar smoothing
+    for (let iter = 0; iter < 5; iter++) {
+        const tmp = map.map(row => [...row]);
+        for (let y = 1; y < H - 1; y++) {
+            for (let x = 1; x < W - 1; x++) {
+                let walls = 0;
+                for (let dy = -1; dy <= 1; dy++)
+                    for (let dx = -1; dx <= 1; dx++)
+                        if (map[y + dy][x + dx] === TILES.WALL) walls++;
+                tmp[y][x] = (walls > 4) ? TILES.WALL : TILES.FLOOR;
+            }
+        }
+        map = tmp;
+    }
+    return map;
+}
 
-function generateSwampMap(rand, MAP_HEIGHT_TILES, MAP_WIDTH_TILES){
-    let map = Array.from({ length: MAP_HEIGHT_TILES }, () => Array(MAP_WIDTH_TILES).fill(TILES.MUD));
 
+function generateForestMap(rand, H, W) {
+    // 1. Preenchimento aleatório
+    let map = Array.from({ length: H }, () => Array(W).fill(TILES.TREE));
+    for (let y = 1; y < H - 1; y++) {
+        for (let x = 1; x < W - 1; x++) {
+            map[y][x] = (rand() % 100 < 60) ? TILES.FLOOR : TILES.TREE;
+        }
+    }
+    // 2. Suavização (smoothing)
+    for (let iter = 0; iter < 5; iter++) {
+        const tmp = map.map(row => [...row]);
+        for (let y = 1; y < H - 1; y++) {
+            for (let x = 1; x < W - 1; x++) {
+                let floorCount = 0;
+                for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++)
+                    if (map[y + dy][x + dx] === TILES.FLOOR) floorCount++;
+                tmp[y][x] = (floorCount >= 5) ? TILES.FLOOR : TILES.TREE;
+            }
+        }
+        map = tmp;
+    }
+    // 3. Conectividade
+    const visited = Array.from({ length: H }, () => Array(W).fill(false));
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    // encontre ponto inicial
+    let start = null;
+    for (let y = 1; y < H - 1 && !start; y++) {
+        for (let x = 1; x < W - 1; x++) {
+            if (map[y][x] === TILES.FLOOR) { start = [y, x]; break; }
+        }
+    }
+    if (start) {
+        const queue = [start]; visited[start[0]][start[1]] = true;
+        // flood fill
+        while (queue.length) {
+            const [y, x] = queue.shift();
+            for (const [dy, dx] of dirs) {
+                const ny = y + dy, nx = x + dx;
+                if (ny > 0 && ny < H-1 && nx > 0 && nx < W-1 && !visited[ny][nx] && map[ny][nx] === TILES.FLOOR) {
+                    visited[ny][nx] = true;
+                    queue.push([ny, nx]);
+                }
+            }
+        }
+        // conectar áreas isoladas
+        for (let y = 1; y < H - 1; y++) {
+            for (let x = 1; x < W - 1; x++) {
+                if (map[y][x] === TILES.FLOOR && !visited[y][x]) {
+                    let cy = y, cx = x;
+                    // carve manhattan até start
+                    while (!visited[cy][cx]) {
+                        if (Math.abs(cy - start[0]) > Math.abs(cx - start[1])) {
+                            cy += (start[0] > cy ? 1 : -1);
+                        } else {
+                            cx += (start[1] > cx ? 1 : -1);
+                        }
+                        map[cy][cx] = TILES.FLOOR;
+                        visited[cy][cx] = true;
+                    }
+                }
+            }
+        }
+    }
+    return map;
+}
+
+
+// Pântano com água e ilhas conectadas por lama
+function generateSwampMap(rand, H, W) {
+    const map = Array.from({ length: H }, () => Array(W).fill(TILES.MUD));
+    const lakes = 2 + (rand() % 3);
     const waterCenters = [];
-    const numLakes = 3 + rand() % 5;
-
-    for (let i = 0; i < numLakes; i++) {
-        const cx = 5 + rand() % (MAP_WIDTH_TILES - 10);
-        const cy = 5 + rand() % (MAP_HEIGHT_TILES - 10);
-        const radius = 3 + rand() % 4;
-        waterCenters.push([cx, cy, radius]);
+    for (let i = 0; i < lakes; i++) {
+        const r = 2 + (rand() % 3);
+        const cx = r + (rand() % (W - 2 * r));
+        const cy = r + (rand() % (H - 2 * r));
+        waterCenters.push({ cx, cy, r });
+        for (let y = -r; y <= r; y++)
+            for (let x = -r; x <= r; x++)
+                if (x * x + y * y <= r * r)
+                    map[cy + y][cx + x] = TILES.WATER;
     }
+    // Add mud bridges between water pools
+    for (let i = 0; i < waterCenters.length - 1; i++) {
+        const a = waterCenters[i], b = waterCenters[i + 1];
+        let x1 = a.cx, y1 = a.cy;
+        const x2 = b.cx, y2 = b.cy;
+        while (x1 !== x2) {
+            map[y1][x1] = TILES.MUD;
+            x1 += x2 > x1 ? 1 : -1;
+        }
+        while (y1 !== y2) {
+            map[y1][x1] = TILES.MUD;
+            y1 += y2 > y1 ? 1 : -1;
+        }
+    }
+    return map;
+}
 
-    for (const [cx, cy, radius] of waterCenters) {
-        for (let y = -radius; y <= radius; y++) {
-            for (let x = -radius; x <= radius; x++) {
-                const dx = cx + x;
-                const dy = cy + y;
-                if (dx < 1 || dy < 1 || dx >= MAP_WIDTH_TILES-1 || dy >= MAP_HEIGHT_TILES-1) continue;
-                if (x*x + y*y <= radius*radius) {
-                    map[dy][dx] = TILES.WATER;
-                }
+// Deserto com dunas e ruínas conectadas
+function generateDesertMap(rand, H, W) {
+    const map = Array.from({ length: H }, () => Array(W).fill(TILES.SAND));
+    const dunes = 3 + (rand() % 3);
+    for (let i = 0; i < dunes; i++) {
+        const r = 1 + (rand() % 3);
+        const cx = Math.floor(rand() % W);
+        const cy = Math.floor(rand() % H);
+        for (let y = -r; y <= r; y++)
+            for (let x = -r; x <= r; x++)
+                if (x * x + y * y <= r * r && cy + y >= 0 && cy + y < H && cx + x >= 0 && cx + x < W)
+                    map[cy + y][cx + x] = TILES.ROCK;
+    }
+    const ruins = 2 + (rand() % 3);
+    for (let i = 0; i < ruins; i++) {
+        const rw = 3 + (rand() % 4), rh = 3 + (rand() % 4);
+        const rx = Math.floor(rand() % (W - rw));
+        const ry = Math.floor(rand() % (H - rh));
+        for (let y = ry; y < ry + rh; y++) {
+            for (let x = rx; x < rx + rw; x++) {
+                map[y][x] = (y === ry || y === ry + rh - 1 || x === rx || x === rx + rw - 1)
+                    ? TILES.BRICK : TILES.FLOOR;
+            }
+        }
+        // place door
+        const side = rand() % 4;
+        if (side === 0) map[ry][rx + 1 + rand() % (rw - 2)] = TILES.FLOOR;
+        if (side === 1) map[ry + rh - 1][rx + 1 + rand() % (rw - 2)] = TILES.FLOOR;
+        if (side === 2) map[ry + 1 + rand() % (rh - 2)][rx] = TILES.FLOOR;
+        if (side === 3) map[ry + 1 + rand() % (rh - 2)][rx + rw - 1] = TILES.FLOOR;
+    }
+    return map;
+}
+
+// Ruínas com salas e corredores simétricos
+function generateRuinsMap(rand, H, W) {
+    const map = Array.from({ length: H }, () => Array(W).fill(TILES.BRICK));
+    const rooms = [];
+    const half = Math.floor(W / 2);
+    // Generate rooms in left half
+    for (let i = 0; i < 5; i++) {
+        const rw = 3 + (rand() % 4);
+        const rh = 3 + (rand() % 4);
+        const rx = rand() % (half - rw - 1) + 1;
+        const ry = rand() % (H - rh - 1) + 1;
+        rooms.push({ rx, ry, rw, rh });
+        for (let y = ry; y < ry + rh; y++) {
+            for (let x = rx; x < rx + rw; x++) {
+                map[y][x] = (y === ry || y === ry + rh -1 || x === rx || x === rx+rw-1)
+                    ? TILES.BRICK : TILES.FLOOR;
             }
         }
     }
-
-    return map;
-}
-
-function generateDesertMap(rand, MAP_HEIGHT_TILES, MAP_WIDTH_TILES){
-    let map = Array.from({ length: MAP_HEIGHT_TILES }, () => Array(MAP_WIDTH_TILES).fill(TILES.SAND));
-
-    const duneCount = 8 + rand() % 10;
-
-    for(let i = 0; i < duneCount; i++){
-        const cx = rand() % MAP_WIDTH_TILES;
-        const cy = rand() % MAP_HEIGHT_TILES;
-        const radius = 2 + rand() % 6;
-
-        for (let y = -radius; y <= radius; y++) {
-            for (let x = -radius; x <= radius; x++) {
-                const dx = cx + x;
-                const dy = cy + y;
-                if (dx < 1 || dy < 1 || dx >= MAP_WIDTH_TILES-1 || dy >= MAP_HEIGHT_TILES-1) continue;
-                if (x*x + y*y <= radius*radius && rand()%100 < 75) {
-                    map[dy][dx] = TILES.ROCK;
-                }
+    // mirror horizontally
+    rooms.forEach(r => {
+        for (let y = r.ry; y < r.ry + r.rh; y++) {
+            for (let x = r.rx; x < r.rx + r.rw; x++) {
+                map[y][W-1 - x] = map[y][x];
             }
         }
+    });
+    // connect room centers
+    const centers = rooms.map(r => ({ x: r.rx + Math.floor(r.rw/2), y: r.ry + Math.floor(r.rh/2) }));
+    centers.forEach(c => centers.push({ x: W-1 - c.x, y: c.y }));
+    centers.sort((a,b) => a.x - b.x);
+    for (let i = 0; i < centers.length -1; i++) {
+        let x1 = centers[i].x, y1 = centers[i].y;
+        const x2 = centers[i+1].x, y2 = centers[i+1].y;
+        while (x1 !== x2) { x1 += x2>x1?1:-1; map[y1][x1] = TILES.FLOOR; }
+        while (y1 !== y2) { y1 += y2>y1?1:-1; map[y1][x1] = TILES.FLOOR; }
     }
-
     return map;
-}
-
-function generateRuinsMap(rand, MAP_HEIGHT_TILES, MAP_WIDTH_TILES){
-    let map = Array.from({ length: MAP_HEIGHT_TILES }, () => Array(MAP_WIDTH_TILES).fill(TILES.BRICK));
-
-    let floorTiles = 0;
-    const totalTiles = MAP_WIDTH_TILES * MAP_HEIGHT_TILES;
-    const targetFloorPercentage = 0.35;
-    let diggerX = Math.floor(MAP_WIDTH_TILES / 2);
-    let diggerY = Math.floor(MAP_HEIGHT_TILES / 2);
-    let totalTentativas = 0;
-
-    while (floorTiles < totalTiles * targetFloorPercentage && totalTentativas < 5*totalTiles) {
-        if (map[diggerY][diggerX] === TILES.BRICK) {
-            map[diggerY][diggerX] = TILES.RUBBLE;
-            floorTiles++;
-        }
-        totalTentativas++;
-        const directions = [[0, -1], [0, 1], [-1, 0], [1, 0]];
-        const [dx, dy] = directions[(rand() % directions.length)];
-        diggerX = Math.max(1, Math.min(MAP_WIDTH_TILES - 2, diggerX + dx));
-        diggerY = Math.max(1, Math.min(MAP_HEIGHT_TILES - 2, diggerY + dy));
-    }
-
-    return map;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-///////////////////////////
-function getFloorPositions() {
-    const floorPositions = [];
-    for (let y = 0; y < MAP_HEIGHT_TILES; y++) for (let x = 0; x < MAP_WIDTH_TILES; x++) {
-        if (map[y][x] === TILES.FLOOR) floorPositions.push({ x, y });
-    }
-    return floorPositions;
-}
-
-// --- POSICIONAMENTO DE ENTIDADES ---
-function placeEntities() {
-    const floorPositions = getFloorPositions();
-    
-    const playerPos = floorPositions.splice(Math.floor(Math.random() * floorPositions.length), 1)[0];
-    player = { x: playerPos.x, y: playerPos.y, isAttacking: false, attackTimer: 0 };
-
-    enemies = [];
-    if (dungeonLevel % 5 === 0) {
-        addLog("Um arrepio percorre sua espinha... Uma presença poderosa está aqui!");
-        const pos = floorPositions.splice(Math.floor(Math.random() * floorPositions.length), 1)[0];
-        const bossData = ENEMY_TYPES.BOSS;
-        enemies.push({ ...pos, type: 'BOSS', ...bossData, hp: bossData.hp * dungeonLevel, maxHp: bossData.hp * dungeonLevel, attack: bossData.attack + dungeonLevel });
-    } else {
-        const numEnemies = 3 + dungeonLevel;
-        for (let i = 0; i < numEnemies; i++) {
-            if (floorPositions.length === 0) break;
-            const pos = floorPositions.splice(Math.floor(Math.random() * floorPositions.length), 1)[0];
-            const type = Math.random() > 0.7 ? 'TANK' : 'GRUNT';
-            const enemyData = ENEMY_TYPES[type];
-            enemies.push({ ...pos, type, ...enemyData, hp: enemyData.hp + (dungeonLevel * 2), maxHp: enemyData.hp + (dungeonLevel * 2), attack: enemyData.attack + Math.floor(dungeonLevel / 2) });
-        }
-    }
-
-    items = [];
-    const possibleItems = [
-        { name: "Espada", type: "arma", effect: { attack: 5, attackPattern: 'default' }, symbol: '⚔️' },
-        { name: "Tomo Arcano", type: "magia", effect: { attack: 3, attackPattern: 'magia' }, symbol: '📖' },
-        { name: "Escudo", type: "defesa", effect: { maxHp: 20 }, symbol: '🛡️' },
-        { name: "Poção de Cura", type: "consumivel", effect: { heal: 25 }, symbol: '🧪' },
-        { name: "Lança", type: "arma", effect: { attack: 3, attackPattern: 'line' }, symbol: '🔱' },
-        { name: "Mangual", type: "arma", effect: { attack: 2, attackPattern: 'wide' }, symbol: '⛓️' }
-    ];
-    const numItems = 2 + Math.floor(dungeonLevel / 3);
-    for (let i = 0; i < numItems; i++) {
-            if (floorPositions.length === 0) break;
-        const pos = floorPositions.splice(Math.floor(Math.random() * floorPositions.length), 1)[0];
-        const itemProto = possibleItems[Math.floor(Math.random() * possibleItems.length)];
-        items.push({ ...itemProto, ...pos });
-    }
-    
-    npcs = [];
-    const numNpcs = Math.random() > 0.3 ? 1 : 0; // Chance de ter um NPC
-    if (numNpcs > 0 && floorPositions.length > 0) {
-        const pos = floorPositions.splice(Math.floor(Math.random() * floorPositions.length), 1)[0];
-        npcs.push({ ...pos }); // NPC é criado sem diálogo inicial
-    }
-
-    if (floorPositions.length > 1) {
-        const keyPos = floorPositions.splice(Math.floor(Math.random() * floorPositions.length), 1)[0];
-        map[keyPos.y][keyPos.x] = TILES.KEY;
-        const doorPos = floorPositions.splice(Math.floor(Math.random() * floorPositions.length), 1)[0];
-        map[doorPos.y][doorPos.x] = TILES.DOOR;
-    }
-    
-    if (Math.random() < 0.3 && floorPositions.length > 0) {
-        const villagePos = floorPositions.splice(Math.floor(Math.random() * floorPositions.length), 1)[0];
-        map[villagePos.y][villagePos.x] = TILES.VILLAGE;
-    }
 }
