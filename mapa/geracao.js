@@ -288,10 +288,10 @@ function generateMap(sala, rand){
     else 
         sala.map = generateCaveMap(rand, MAP_HEIGHT_TILES, MAP_WIDTH_TILES);
 
-    let doors = getDoorPositions(sala.map, sala.vizinhas.length, rand);
+    let portas = getDoorPositions(sala.map, sala.vizinhas.length, rand);
 
-    console.log(doors);
-    for (const {x, y} of doors) sala.map[y][x] = TILES.DOOR;
+    for (const {x, y} of portas) sala.map[y][x] = TILES.DOOR;
+    sala.portas = portas;
 }
 
 function getDoorPositions(map, P, rand) {
