@@ -232,6 +232,7 @@
         }
 
     </style>
+    <script src="mapa/geracao.js"></script> 
 </head>
 <div id="pause-overlay">
     <div id="pause-box">
@@ -297,6 +298,10 @@
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <script>
+
+
+        /////////////////////////////////////////////////////////////
+
         let isPaused = false;
         const pauseButton = document.getElementById('pause-button');
 
@@ -310,32 +315,26 @@
         const ctx = canvas.getContext('2d');
 
         const TILE_SIZE = 20;
-        const MAP_WIDTH_TILES = 30;
-        const MAP_HEIGHT_TILES = 30;
+        var MAP_WIDTH_TILES = 30;
+        var MAP_HEIGHT_TILES = 30;
 
         canvas.width = MAP_WIDTH_TILES * TILE_SIZE;
         canvas.height = MAP_HEIGHT_TILES * TILE_SIZE;
-
-        const TILES = {
-            WALL: 0, FLOOR: 1, PLAYER: 2, ENEMY: 3, KEY: 4, DOOR: 5,
-            ITEM: 6, VILLAGE: 7, HEAL_ITEM: 9, NPC: 10
-        };
         
+
+        let PLAYER_EMOJI = '🧔🏿'
         const ENEMY_TYPES = {
             GRUNT: { symbol: '👺', hp: 10, attack: 2 },
             TANK: { symbol: '🗿', hp: 30, attack: 1 },
             BOSS: { symbol: '🐲', hp: 100, attack: 5 }
         };
-
-        const COLORS = {
-            [TILES.WALL]: getComputedStyle(document.documentElement).getPropertyValue('--wall-color').trim(),
-            [TILES.FLOOR]: getComputedStyle(document.documentElement).getPropertyValue('--floor-color').trim(),
-        };
         
         const SPEECH_FONT = "10px 'Press Start 2P'";
         const EMOJI_FONT = "18px sans-serif";
 
-        // --- ESTADO DO JOGO ---
+        ///// --- ESTADO DO JOGO --- /////
+        //to do: atualizar isso na sala quando trocar 
+        // manter estado pra cada sala
         let map;
         let player;
         let enemies;
@@ -343,6 +342,7 @@
         let npcs;
         let dungeonLevel = 1;
         let activeDialogue = null;
+        ///////////////////
 
         const playerState = {
             maxHp: 100, hp: 100,
@@ -385,31 +385,11 @@
             };
             audioInitialized = true;
         }
-
-        // --- GERAÇÃO PROCEDURAL DO MAPA ---
-        function generateMap() {
-            map = Array.from({ length: MAP_HEIGHT_TILES }, () => Array(MAP_WIDTH_TILES).fill(TILES.WALL));
-            let floorTiles = 0;
-            const totalTiles = MAP_WIDTH_TILES * MAP_HEIGHT_TILES;
-            const targetFloorPercentage = 0.4;
-            let diggerX = Math.floor(MAP_WIDTH_TILES / 2);
-            let diggerY = Math.floor(MAP_HEIGHT_TILES / 2);
-            while (floorTiles < totalTiles * targetFloorPercentage) {
-                if (map[diggerY][diggerX] === TILES.WALL) {
-                    map[diggerY][diggerX] = TILES.FLOOR;
-                    floorTiles++;
-                }
-                const directions = [[0, -1], [0, 1], [-1, 0], [1, 0]];
-                const [dx, dy] = directions[Math.floor(Math.random() * directions.length)];
-                diggerX = Math.max(1, Math.min(MAP_WIDTH_TILES - 2, diggerX + dx));
-                diggerY = Math.max(1, Math.min(MAP_HEIGHT_TILES - 2, diggerY + dy));
-            }
-        }
         
         function getFloorPositions() {
             const floorPositions = [];
             for (let y = 0; y < MAP_HEIGHT_TILES; y++) for (let x = 0; x < MAP_WIDTH_TILES; x++) {
-                if (map[y][x] === TILES.FLOOR) floorPositions.push({ x, y });
+                if (floorTiles.has(map[y][x])) floorPositions.push({ x, y });
             }
             return floorPositions;
         }
@@ -475,6 +455,30 @@
             }
         }
 
+        window._geracao = { generateMap };
+        function initLevel() {
+            const seed = Math.floor(Date.now()/100000);
+            salas = gerarMapa(seed);
+            console.log(salas);
+            console.log(seed);
+            currentSala = 0;
+            loadSala(0);
+        }
+
+
+        function loadSala(id) {
+            const sala = salas[id];
+            MAP_WIDTH_TILES = sala.map[0].length;
+            MAP_HEIGHT_TILES = sala.map.length;
+            canvas.width = MAP_WIDTH_TILES * TILE_SIZE;
+            canvas.height = MAP_HEIGHT_TILES * TILE_SIZE;
+
+            map = sala.map.map(r => r.slice());
+            // mantém dungeonLevel, playerState, messageLog etc.
+            placeEntities(); // reposiciona player, enemies, items, npcs usando o novo map
+        }
+
+
         // --- LÓGICA DO JOGO ---
         function movePlayer(dx, dy) {
             if (player.isAttacking) return;
@@ -488,7 +492,7 @@
 
             const targetTile = map[newY][newX];
             
-            if (targetTile === TILES.FLOOR || targetTile === TILES.KEY || targetTile === TILES.VILLAGE) {
+            if (floorTiles.has(targetTile) || targetTile === TILES.KEY || targetTile === TILES.VILLAGE) {
                 player.x = newX;
                 player.y = newY;
                 handleInteractions();
@@ -496,14 +500,39 @@
                 moveEnemies();
                 updateUI();
             } else if (targetTile === TILES.DOOR) {
-                if (playerState.keys > 0) {
-                    playerState.keys--;
-                    addLog("Você usou a 🔑 e abriu a 🚪 para o próximo nível!");
+                const viz = salas[currentSala].getVizinha(newX, newY);
+                const outroLado = viz.sala.getPortaToViz(currentSala);
+                console.log(viz);
+                currentSala = viz.sala.id;
+                let travada = viz.travada
+
+                console.log(outroLado.x, outroLado.y)
+                
+                if(travada && playerState.keys > 0) { //player has key chaveId ...
+                    playerState.keys--; // manda a chave id, pra desbloquear e remove
+                    loadSala(currentSala);
                     if (audioInitialized) sounds.door.triggerAttackRelease("8n");
-                    nextLevel();
+                    if (salas[currentSala].final){
+                        addLog("Você usou a 🔑 e foi para outro mundo!!!");
+                        initLevel();
+                    } 
+                    else addLog(`Você usou a 🔑 e abriu a 🚪 para a sala ${viz.sala.id}!!!`);
+
+                    player.x = outroLado.x;
+                    player.y = outroLado.y;
+
                     return;
-                } else {
-                    addLog("A 🚪 está trancada. Encontre uma 🔑.");
+                } else 
+                if(!travada){
+                    loadSala(currentSala);
+                    if (audioInitialized) sounds.door.triggerAttackRelease("8n");
+                    addLog(`Você usou a 🔑 e abriu a 🚪 para a sala ${viz.sala.id}!!!`);
+
+                    player.x = outroLado.x;
+                    player.y = outroLado.y;
+                }
+                else {
+                    addLog("A 🚪 está trancada. Encontre a 🔑.");
                 }
             }
         }
@@ -617,7 +646,7 @@
                 const newX = enemy.x + moveX;
                 const newY = enemy.y + moveY;
                 
-                if (map[newY][newX] === TILES.FLOOR && !enemies.some(e => e.x === newX && e.y === newY) && !npcs.some(n => n.x === newX && n.y === newY)) {
+                if (floorTiles.has(map[newY][newX]) && !enemies.some(e => e.x === newX && e.y === newY) && !npcs.some(n => n.x === newX && n.y === newY)) {
                     enemy.x = newX;
                     enemy.y = newY;
                 }
@@ -776,7 +805,7 @@
             for (let y = 0; y < MAP_HEIGHT_TILES; y++) {
                 for (let x = 0; x < MAP_WIDTH_TILES; x++) {
                     const tile = map[y][x];
-                    ctx.fillStyle = (tile === TILES.WALL) ? COLORS[TILES.WALL] : COLORS[TILES.FLOOR];
+                    ctx.fillStyle = getTileColor(tile, salas[currentSala]);
                     ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                 }
             }
@@ -827,7 +856,7 @@
             });
 
             ctx.font = EMOJI_FONT;
-            ctx.fillText('🧑', player.x * TILE_SIZE + TILE_SIZE / 2, player.y * TILE_SIZE + TILE_SIZE / 2 + 1);
+            ctx.fillText(PLAYER_EMOJI, player.x * TILE_SIZE + TILE_SIZE / 2, player.y * TILE_SIZE + TILE_SIZE / 2 + 1);
 
             if (activeDialogue) drawSpeechBubble(activeDialogue.npc);
         }
@@ -944,16 +973,11 @@
             }
         });
 
-        // --- INICIALIZAÇÃO ---
-        function init() {
-            generateMap();
-            placeEntities();
-            updateUI();
-        }
 
         window.onload = () => {
             showModal("Bem-vindo ao Labirinto Infinito! Use WASD/Setas para mover e Espaço para atacar.");
-            init();
+            initAudio();
+            initLevel();      // novo ponto de partida
             requestAnimationFrame(gameLoop);
         };
 

@@ -13,8 +13,8 @@ function rangeRandom(l, r, rand){ return l + rand()%(r-l+1); }
 
 const MAX_SALAS = 25;
 const MIN_SALAS = 7;
-const MAP_MAX_TILES = 60;
-const MAP_MIN_TILES = 30;
+const MAP_MAX_TILES = 40;
+const MAP_MIN_TILES = 10;
 const TIPOS_DE_SALA = ["areasegura", "tesouro", "inimigos", "inimigos", "miniboss", "corredor", "npcs"]
 const TIPOS_SALA_END = ["tesouro", "tesouro", "tesouro", "npcs"] //salas sem saída
 const TIPOS_BIOMAS = ["caverna", "floresta", "pantano", "deserto", "ruinas", "floresta"]
@@ -37,6 +37,37 @@ const wallTiles = new Set([TILES.WALL, TILES.TREE, TILES.ROCK, TILES.BRICK, TILE
 const floorTiles = new Set([ TILES.FLOOR, TILES.MUD, TILES.SAND, // TILES.GRASS, TILES.PATH, TILES.STONE_FLOOR, 
     ]);
 
+function getTileColor(tile, sala){
+    let fill = "#000";
+    switch (tile) {
+        case TILES.WALL:
+            fill = {
+                caverna: "#444", floresta: "#2e5c2e",
+                pantano: "#2c3f48", deserto: "#d2b48c",
+                ruins: "#555", volcano: "#333"
+            }[sala.bioma] || "#444";
+            break;
+        case TILES.FLOOR:
+            fill = { caverna: "#888", floresta: "#cce5cc",
+                pantano: "#99aabb", deserto: "#f4e4b2",
+                ruins: "#aaa", volcano: "#aa5500"
+            }[sala.bioma] || "#888";
+            break;
+        case TILES.TREE: fill = "#228b22"; break;
+        case TILES.WATER: fill = "#336677"; break;
+        case TILES.MUD: fill = "#553"; break;
+        case TILES.SAND: fill = "#ffe4a1"; break;
+        case TILES.ROCK: fill = "#555555"; break;
+        case TILES.BRICK: fill = "#aa7f4d"; break;
+        case TILES.RUBBLE: fill = "#888"; break;
+        case TILES.LAVA: fill = "#cc3300"; break;
+        case TILES.ASH: fill = "#666666"; break;
+        case TILES.DOOR: fill = "#ff9900"; break;
+        default: fill = "#f00"; break;
+    }
+    return fill;
+}
+
 class Sala {
     constructor(id) {
         this.id = id;
@@ -49,7 +80,7 @@ class Sala {
         this.pos = { x: 0, y: 0 };
         this.profundidade = -1;
         this.nivelBloqueio = 0;
-        this.map = this.gerarLayoutSala();
+        this.map = [[]];
         this.enemies = [];
         this.items = [];
         this.npcs = [];
@@ -63,19 +94,18 @@ class Sala {
         sala.vizinhas.push({ sala: this, travada, chaveId });
     }
 
-    gerarLayoutSala() {
-        const largura = 9, altura = 9;
-        const mapa = Array.from({ length: altura }, () => Array(largura).fill("#"));
-        for (let y = 1; y < altura - 1; y++) {
-            for (let x = 1; x < largura - 1; x++) {
-                mapa[y][x] = ".";
-            }
-        }
-        mapa[Math.floor(altura / 2)][0] = "P";  // porta esquerda
-        mapa[Math.floor(altura / 2)][largura - 1] = "P";  // porta direita
-        mapa[0][Math.floor(largura / 2)] = "P";  // porta cima
-        mapa[altura - 1][Math.floor(largura / 2)] = "P";  // porta baixo
-        return mapa;
+    getVizinha(x, y){
+        for(let i=0; i < this.portas.length; i++)
+            if(this.portas[i].x == x && this.portas[i].y == y)
+                return this.vizinhas[i];
+        return {sala:this, travada:false, chaveId:null};
+    }
+
+    getPortaToViz(id){
+        for(let i=0; i < this.vizinhas.length; i++)
+            if(this.vizinhas[i].sala.id == id)
+                return this.portas[i];
+        return this.portas[0];
     }
 }
 // BFS considerando chaves já obtidas
