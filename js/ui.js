@@ -25,13 +25,13 @@ export function updateUI() {
       controls.style.gap = '6px';
 
       const leftBtn = document.createElement('button');
-      leftBtn.textContent = '◀️';
+      leftBtn.textContent = '⬆️';
       leftBtn.title = 'Mover para a esquerda (não consome turno)';
       leftBtn.addEventListener('click', (e) => { e.stopPropagation(); reorderInventory(idx, Math.max(0, idx - 1)); });
       controls.appendChild(leftBtn);
 
       const rightBtn = document.createElement('button');
-      rightBtn.textContent = '▶️';
+      rightBtn.textContent = '⬇️';
       rightBtn.title = 'Mover para a direita (não consome turno)';
       rightBtn.addEventListener('click', (e) => { e.stopPropagation(); reorderInventory(idx, Math.min(inv.length - 1, idx + 1)); });
       controls.appendChild(rightBtn);
