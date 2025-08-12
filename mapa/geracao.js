@@ -23,6 +23,7 @@ const TILES = {
     WALL: 0,
     FLOOR: 1,
     DOOR: 5,
+    KEY: 6, // adicionado para compatibilidade com o jogo
     TREE: 11,
     WATER: 12,
     MUD: 13,
@@ -135,7 +136,8 @@ function bfs(salas, inicio = 0, travas = new Set()) {
 function gerarMapa(seed) {
     const rand = RandomSeed(seed);
     const quantidadeSalas = MIN_SALAS + (rand() % (MAX_SALAS - MIN_SALAS + 1));
-    const numPortasTrancadas = 2 + rand() % (1 + Math.floor(quantidadeSalas / 3));
+    // Aproximadamente metade das conexões principais (arestas da árvore) serão trancadas
+    const numPortasTrancadas = Math.max(1, Math.floor((quantidadeSalas - 1) / 2));
     const numCiclosExtras = 2 + rand() % (1 + (quantidadeSalas - numPortasTrancadas));
     const salas = [];
 
@@ -286,7 +288,7 @@ function mostrarMapa(salas) {
         console.log(texto);
         for (const viz of sala.vizinhas) {
             const travada = viz.travada ? ` (trancada com ${viz.chaveId})` : '';
-            console.log(`  ↳ Sala ${viz.sala.id}${travada}`);
+            console.log(`  ↳ Sala ${viz.sala.id}${trancada}`);
         }
     }
 }
@@ -311,10 +313,13 @@ function generateMap(sala, rand){
     else 
         sala.map = generateCaveMap(rand, MAP_HEIGHT_TILES, MAP_WIDTH_TILES);
 
-    let portas = getDoorPositions(sala.map, sala.vizinhas.length, rand);
+    let portasCandidatas = getDoorPositions(sala.map, sala.vizinhas.length, rand);
 
-    for (const {x, y} of portas) sala.map[y][x] = TILES.DOOR;
-    sala.portas = portas;
+    // Garante alinhamento 1:1 entre vizinhas e portas pelo índice
+    const portasAlocadas = sala.vizinhas.map((_, i) => portasCandidatas[i] || portasCandidatas[i % Math.max(1, portasCandidatas.length)] || { x: 1, y: 1 });
+
+    for (const {x, y} of portasAlocadas) sala.map[y][x] = TILES.DOOR;
+    sala.portas = portasAlocadas;
 }
 
 function getDoorPositions(map, P, rand) {
