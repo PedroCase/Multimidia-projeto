@@ -23,7 +23,7 @@ export function setupControls() {
       case 'ArrowDown': case 's': movePlayer(0, 1); break;
       case 'ArrowLeft': case 'a': movePlayer(-1, 0); break;
       case 'ArrowRight': case 'd': movePlayer(1, 0); break;
-      case ' ': playerAttack(); break;
+      case ' ': case 'Enter': playerAttack(); break;
     }
   });
 }

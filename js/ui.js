@@ -23,7 +23,7 @@ export function updateUI() {
       const controls = document.createElement('div');
       controls.style.display = 'inline-flex';
       controls.style.gap = '6px';
-
+      
       const leftBtn = document.createElement('button');
       leftBtn.textContent = '◀️';
       leftBtn.title = 'Mover para a esquerda (não consome turno)';
@@ -39,11 +39,24 @@ export function updateUI() {
       if (item.type === 'consumivel') {
         const useBtn = document.createElement('button');
         useBtn.textContent = 'Usar';
+        equipBtn.style.fontFamily = "'Press Start 2P', cursive";
         useBtn.title = 'Usar item (consome um turno)';
         useBtn.addEventListener('click', (e) => { e.stopPropagation(); useInventoryItem(idx); });
         controls.appendChild(useBtn);
       }
-
+      if (item.type === 'equipamento') {
+        const equipBtn = document.createElement('button');
+        equipBtn.textContent = 'Equipar';
+        equipBtn.title = 'Equipar este item';
+        equipBtn.style.fontFamily = "'Press Start 2P', cursive";
+        equipBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          // Aqui você decide o efeito de equipar:
+          applyItemEffect(item); // Aplica os efeitos
+          addLog(`Você equipou ${item.name} ${item.symbol}.`);
+        });
+        controls.appendChild(equipBtn);
+      }
       li.appendChild(controls);
       inventoryListEl.appendChild(li);
     });

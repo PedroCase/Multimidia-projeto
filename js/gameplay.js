@@ -76,12 +76,12 @@ export function placeEntities() {
 
   items = [];
   const possibleItems = [
-    { name: "Espada", type: "arma", effect: { attack: 5, attackPattern: 'default' }, symbol: '⚔️' },
-    { name: "Tomo Arcano", type: "magia", effect: { attack: 3, attackPattern: 'magia' }, symbol: '📖' },
-    { name: "Escudo", type: "defesa", effect: { maxHp: 20 }, symbol: '🛡️' },
+    { name: "Espada", type: "equipamento", effect: { attack: 5, attackPattern: 'default' }, symbol: '⚔️' },
+    { name: "Tomo Arcano", type: "equipamento", effect: { attack: 3, attackPattern: 'magia' }, symbol: '📖' },
+    { name: "Escudo", type: "equipamento", effect: { maxHp: 20 }, symbol: '🛡️' },
     { name: "Poção de Cura", type: "consumivel", effect: { heal: 25 }, symbol: '🧪' },
-    { name: "Lança", type: "arma", effect: { attack: 3, attackPattern: 'line' }, symbol: '🔱' },
-    { name: "Mangual", type: "arma", effect: { attack: 2, attackPattern: 'wide' }, symbol: '⛓️' }
+    { name: "Lança", type: "equipamento", effect: { attack: 3, attackPattern: 'line' }, symbol: '🔱' },
+    { name: "Mangual", type: "equipamento", effect: { attack: 2, attackPattern: 'wide' }, symbol: '⛓️' }
   ];
   const numItems = 2 + Math.floor(dungeonLevel / 3);
   for (let i = 0; i < numItems; i++) {
