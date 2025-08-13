@@ -119,6 +119,8 @@ export function movePlayer(dx, dy) {
 
   const newX = player.x + dx;
   const newY = player.y + dy;
+  
+  if (enemies.some(e => e.x === newX && e.y === newY)) return;
 
   if (newX < 0 || newX >= MAP_WIDTH_TILES || newY < 0 || newY >= MAP_HEIGHT_TILES) return;
 
@@ -141,7 +143,7 @@ export function movePlayer(dx, dy) {
         // Abrir porta na sala atual
         map[newY][newX] = TILES.FLOOR;
         if (!salas[currentSala]._state) salas[currentSala]._state = { openDoors: [] };
-        salas[currentSala]._state.openDoors = Array.from(new Set([...(salas[currentSala]._state.openDoors||[]).map(p=>`${p.x},${p.y}`), `${newX},${newY}`])).map(s=>({x:+s.split(',')[0], y:+s.split(',')[1]}));
+        salas[currentSala]._state.openDoors = Array.from(new Set([...(salas[currentSala]._state.openDoors || []).map(p => `${p.x},${p.y}`), `${newX},${newY}`])).map(s => ({ x: +s.split(',')[0], y: +s.split(',')[1] }));
 
         // Salva estado e consome chave
         saveCurrentSalaState();
@@ -157,7 +159,7 @@ export function movePlayer(dx, dy) {
         if (outroLado) {
           map[outroLado.y][outroLado.x] = TILES.FLOOR;
           if (!salas[currentSala]._state) salas[currentSala]._state = { openDoors: [] };
-          salas[currentSala]._state.openDoors = Array.from(new Set([...(salas[currentSala]._state.openDoors||[]).map(p=>`${p.x},${p.y}`), `${outroLado.x},${outroLado.y}`])).map(s=>({x:+s.split(',')[0], y:+s.split(',')[1]}));
+          salas[currentSala]._state.openDoors = Array.from(new Set([...(salas[currentSala]._state.openDoors || []).map(p => `${p.x},${p.y}`), `${outroLado.x},${outroLado.y}`])).map(s => ({ x: +s.split(',')[0], y: +s.split(',')[1] }));
           saveCurrentSalaState();
         }
 
@@ -331,7 +333,10 @@ export function moveEnemies() {
       }
       const nx = enemy.x + moveX;
       const ny = enemy.y + moveY;
-      if (floorTiles.has(map[ny][nx]) && !enemies.some(e => e.x === nx && e.y === ny) && !npcs.some(n => n.x === nx && n.y === ny)) {
+      if (floorTiles.has(map[ny][nx]) &&
+        !enemies.some(e => e.x === nx && e.y === ny) &&
+        !npcs.some(n => n.x === nx && n.y === ny) &&
+        !(player.x === nx && player.y === ny)) {
         enemy.x = nx; enemy.y = ny;
       }
       enemy.cooldown = enemy.moveCooldown || 0;
@@ -342,13 +347,13 @@ export function moveEnemies() {
       // Spawna periodicamente
       enemy.spawnCooldown = (enemy.spawnCooldown ?? enemy.spawnRate ?? 3) - 1;
       if (enemy.spawnCooldown <= 0) {
-        const dirs = [ [1,0],[-1,0],[0,1],[0,-1] ];
-        for (const [mx,my] of dirs) {
+        const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        for (const [mx, my] of dirs) {
           const sx = enemy.x + mx, sy = enemy.y + my;
-          if (sx>=0 && sx<MAP_WIDTH_TILES && sy>=0 && sy<MAP_HEIGHT_TILES && floorTiles.has(map[sy][sx]) && !enemies.some(e=>e.x===sx&&e.y===sy)) {
+          if (sx >= 0 && sx < MAP_WIDTH_TILES && sy >= 0 && sy < MAP_HEIGHT_TILES && floorTiles.has(map[sy][sx]) && !enemies.some(e => e.x === sx && e.y === sy)) {
             const proto = ENEMY_TYPES.GRUNT;
             const symbolList = proto.symbols || [proto.symbol || '👾'];
-            const symbol = symbolList[Math.floor(Math.random()*symbolList.length)];
+            const symbol = symbolList[Math.floor(Math.random() * symbolList.length)];
             const hpBase = proto.hp + (dungeonLevel * 2);
             const attackBase = (proto.attack ?? 1) + Math.floor(dungeonLevel / 2);
             enemies.push({ x: sx, y: sy, type: 'GRUNT', ai: 'melee', symbol, hp: hpBase, maxHp: hpBase, attack: attackBase, fov: proto.fov || 6, range: 0, moveCooldown: proto.moveCooldown || 0, cooldown: 0 });
@@ -365,7 +370,10 @@ export function moveEnemies() {
         let moveY = adx > ady ? 0 : -Math.sign(dy);
         const nx = enemy.x + moveX;
         const ny = enemy.y + moveY;
-        if (floorTiles.has(map[ny][nx]) && !enemies.some(e => e.x === nx && e.y === ny) && !npcs.some(n => n.x === nx && n.y === ny)) {
+        if (floorTiles.has(map[ny][nx]) &&
+          !enemies.some(e => e.x === nx && e.y === ny) &&
+          !npcs.some(n => n.x === nx && n.y === ny) &&
+          !(player.x === nx && player.y === ny)) {
           enemy.x = nx; enemy.y = ny;
         }
       }
@@ -387,7 +395,10 @@ export function moveEnemies() {
       if (adx > ady) moveX = Math.sign(dx); else moveY = Math.sign(dy);
       const nx = enemy.x + moveX;
       const ny = enemy.y + moveY;
-      if (floorTiles.has(map[ny][nx]) && !enemies.some(e => e.x === nx && e.y === ny) && !npcs.some(n => n.x === nx && n.y === ny)) {
+      if (floorTiles.has(map[ny][nx]) &&
+        !enemies.some(e => e.x === nx && e.y === ny) &&
+        !npcs.some(n => n.x === nx && n.y === ny) &&
+        !(player.x === nx && player.y === ny)) {
         enemy.x = nx; enemy.y = ny;
       }
     }
@@ -432,15 +443,16 @@ export function getAttackTiles() {
       tiles.push({ x: x + dx * 3, y: y + dy * 3 });
       break;
     case 'wide': {
-      const p_dx_wide = dy; 
-      const p_dy_wide = -dx; 
+      const p_dx_wide = dy;
+      const p_dy_wide = -dx;
       tiles.push({ x: x + dx, y: y + dy });
       tiles.push({ x: x + dx * 2, y: y + dy * 2 });
       tiles.push({ x: x + dx + p_dx_wide, y: y + dy + p_dy_wide });
       tiles.push({ x: x + dx - p_dx_wide, y: y + dy - p_dy_wide });
       tiles.push({ x: x + dx * 2 + p_dx_wide, y: y + dy * 2 + p_dy_wide });
       tiles.push({ x: x + dx * 2 - p_dx_wide, y: y + dy * 2 - p_dy_wide });
-      break; }
+      break;
+    }
     case 'magia':
       tiles.push({ x: x + dx, y: y + dy });
       tiles.push({ x: x + dx * 2, y: y + dy * 2 });
@@ -494,12 +506,12 @@ export function playerAttack() {
     }
   }
 
-if (enemyDefeated && audioInitialized) sounds.defeat.triggerAttackRelease("A2", "4n");
-if (hit) addLog(`Você atacou, causando ${playerState.attack} de dano.`);
-else addLog("Você ataca o ar.");
+  if (enemyDefeated && audioInitialized) sounds.defeat.triggerAttackRelease("A2", "4n");
+  if (hit) addLog(`Você atacou, causando ${playerState.attack} de dano.`);
+  else addLog("Você ataca o ar.");
 
-// Salva mudanças (inimigos derrotados etc.)
-saveCurrentSalaState();
+  // Salva mudanças (inimigos derrotados etc.)
+  saveCurrentSalaState();
 
   moveEnemies();
   updateUI();
