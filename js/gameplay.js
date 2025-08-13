@@ -283,7 +283,7 @@ export function applyItemEffect(item) {
     playerState.hp = Math.min(playerState.maxHp, playerState.hp + item.effect.heal);
     addLog(`Você recuperou ${playerState.hp - before} HP.`);
   }
-  if (item.effect.maxHp) { playerState.maxHp = item.effect.maxHp; playerState.hp = Math.min(playerState.maxHp, playerState.hp); }
+  if (item.effect.maxHp) { if (playerState.maxHp > item.effect.maxHp) {playerState.maxHp = item.effect.maxHp; playerState.hp = Math.min(playerState.maxHp, playerState.hp);} else {playerState.hp = Math.min(item.effect.maxHp, playerState.hp + (item.effect.maxHp - playerState.maxHp)); playerState.maxHp = item.effect.maxHp; }}
   if (item.effect.attackPattern) playerState.attackPattern = item.effect.attackPattern;
   updateUI();
 }
