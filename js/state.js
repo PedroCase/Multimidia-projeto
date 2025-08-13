@@ -58,7 +58,7 @@ var messageLog = [];
 // Elementos de UI (preenchidos no bootstrap)
 var hpValueEl, hpBarEl, attackValueEl, attackPatternEl, classNameEl,
     inventoryListEl, dungeonLevelEl, logListEl, modalEl, modalTextEl, modalButton,
-    pauseOverlay, resumeButton, pauseButton;
+    pauseOverlay, resumeButton, pauseButton, restartButton;
 
 // Áudio
 var sounds;

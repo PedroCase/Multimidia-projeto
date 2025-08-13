@@ -1,11 +1,16 @@
 // controls.js - teclado e botões de pausa
 import { initAudio } from './audio.js';
+import { resetGame } from './level.js';
 import { movePlayer, playerAttack } from './gameplay.js';
 import { togglePause } from './ui.js';
 
 export function setupControls() {
   pauseButton.addEventListener('click', togglePause);
   resumeButton.addEventListener('click', togglePause);
+  restartButton.addEventListener('click', () => {
+    togglePause();
+    resetGame();
+  });
 
   window.addEventListener('keydown', (e) => {
     initAudio();
