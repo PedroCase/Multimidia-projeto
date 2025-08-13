@@ -68,7 +68,7 @@ export function gameOver() {
   resetGame();
 }
 
-function resetGame() {
+export function resetGame() {
   dungeonLevel = 1;
   playerState.maxHp = 100;
   playerState.hp = 100;
