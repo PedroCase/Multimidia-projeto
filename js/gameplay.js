@@ -385,6 +385,7 @@ export function moveEnemies() {
     if (adjacent) {
       playerState.hp -= enemy.attack;
       addLog(`Inimigo (${enemy.symbol}) atacou, causando ${enemy.attack} de dano.`);
+      playerState.attack *= 0.9;
       playerWasHit = true;
       enemy.cooldown = enemy.moveCooldown || 0;
       return;
@@ -499,6 +500,8 @@ export function playerAttack() {
       hit = true;
       if (enemy.hp <= 0) {
         addLog(`Inimigo (${enemy.symbol}) derrotado!`);
+        playerState.attack *= 1.25;
+        playerState.hp = Math.min(playerState.hp + 2, 100);
         enemyDefeated = true;
         if (enemy.type === 'BOSS') showModal("O CHEFE 🐲 foi derrotado! O labirinto parece tremer em alívio.", false);
         enemies.splice(i, 1);
@@ -507,7 +510,7 @@ export function playerAttack() {
   }
 
   if (enemyDefeated && audioInitialized) sounds.defeat.triggerAttackRelease("A2", "4n");
-  if (hit) addLog(`Você atacou, causando ${playerState.attack} de dano.`);
+  if (hit) addLog(`Você atacou, causando ${playerState.attack.toFixed(2)} de dano.`);
   else addLog("Você ataca o ar.");
 
   // Salva mudanças (inimigos derrotados etc.)

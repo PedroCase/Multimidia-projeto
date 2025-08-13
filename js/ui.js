@@ -4,7 +4,7 @@ import { reorderInventory, useInventoryItem } from './gameplay.js';
 export function updateUI() {
   hpValueEl.textContent = `${playerState.hp}/${playerState.maxHp}`;
   hpBarEl.style.width = `${(playerState.hp / playerState.maxHp) * 100}%`;
-  attackValueEl.textContent = playerState.attack;
+  attackValueEl.textContent = playerState.attack.toFixed(2);
   attackPatternEl.textContent = playerState.attackPattern.charAt(0).toUpperCase() + playerState.attackPattern.slice(1);
   classNameEl.textContent = playerState.className;
   dungeonLevelEl.textContent = dungeonLevel;
