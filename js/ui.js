@@ -84,13 +84,12 @@ export function addLog(message) {
   updateUI();
 }
 
-export function showModal(text, isGameOver = false) {
+export function showModal(text) {
   modalTextEl.textContent = text;
   modalEl.style.display = 'flex';
   const closeHandler = () => {
     modalEl.style.display = 'none';
     modalButton.removeEventListener('click', closeHandler);
-    if (isGameOver) resetGame();
   };
   modalButton.addEventListener('click', closeHandler);
 }
