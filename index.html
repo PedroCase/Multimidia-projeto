@@ -10,6 +10,14 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css" />
+  <style>
+    /* Ajuste para painel lateral scrollável */
+    #ui-panel {
+      max-height: 80vh;       /* não ultrapassar altura da tela */
+      overflow-y: auto;        /* rolagem vertical */
+      box-sizing: border-box;  /* incluir padding/border no cálculo */
+    }
+  </style>
 </head>
 <body>
   <header>
@@ -78,11 +86,8 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
-  <!-- Gerador de mapa original: NÃO ALTERAR. Apenas garanta que o arquivo exista neste caminho. -->
   <script src="./mapa/geracao.js"></script>
-  <!-- Estado global em JS tradicional para manter compatibilidade com o gerador e o jogo -->
   <script src="./js/state.js"></script>
-  <!-- Módulo principal que importa os demais (ESM) -->
   <script type="module" src="./js/main.js"></script>
 </body>
 </html>
