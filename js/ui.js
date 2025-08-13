@@ -54,8 +54,8 @@ export function updateUI() {
         equipBtn.addEventListener('click', (e) => {
            e.stopPropagation();
           playerState.inventory.splice(idx, 1);
-          playerState.equippedItem = item;
           applyItemEffect(item);
+          playerState.equippedItem = item;
           addLog(`Você equipou ${item.name} ${item.symbol}.`);
           updateUI();
         });
