@@ -100,7 +100,7 @@ export function resetGame() {
   playerState.equippedItem = { 
     name: "Espada", 
     type: "equipamento", 
-    effect: { attack: 5, attackPattern: 'default' }, 
+    effect: { attack: 5, attackPattern: 'default', shield: False}, 
     symbol: '⚔️' 
   };
   playerState.attack = 5;
