@@ -39,11 +39,12 @@ export function updateUI() {
       if (item.type === 'consumivel') {
         const useBtn = document.createElement('button');
         useBtn.textContent = 'Usar';
-        equipBtn.style.fontFamily = "'Press Start 2P', cursive";
+        useBtn.style.fontFamily = "'Press Start 2P', cursive";
         useBtn.title = 'Usar item (consome um turno)';
         useBtn.addEventListener('click', (e) => { e.stopPropagation(); useInventoryItem(idx); });
         controls.appendChild(useBtn);
       }
+
       if (item.type === 'equipamento') {
         const equipBtn = document.createElement('button');
         equipBtn.textContent = 'Equipar';
