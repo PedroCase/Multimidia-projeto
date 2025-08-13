@@ -76,12 +76,12 @@ export function placeEntities() {
 
   items = [];
   const possibleItems = [
-    { name: "Espada", type: "equipamento", effect: { attackPattern: 'default' }, symbol: '⚔️' },
-    { name: "Tomo Arcano", type: "equipamento", effect: { attackPattern: 'magic' }, symbol: '📖' },
-    { name: "Escudo", type: "equipamento", effect: { maxHp: 20, attackPattern: 'shield' }, symbol: '🛡️' },
+    { name: "Espada", type: "equipamento", effect: { maxHp: 100, attackPattern: 'default' }, symbol: '⚔️' },
+    { name: "Tomo Arcano", type: "equipamento", effect: { maxHp: 100, attackPattern: 'magic' }, symbol: '📖' },
+    { name: "Escudo", type: "equipamento", effect: { maxHp: 150, attackPattern: 'shield' }, symbol: '🛡️' },
     { name: "Poção de Cura", type: "consumivel", effect: { heal: 25 }, symbol: '🧪' },
-    { name: "Lança", type: "equipamento", effect: { attackPattern: 'line' }, symbol: '🔱' },
-    { name: "Mangual", type: "equipamento", effect: { attackPattern: 'wide' }, symbol: '⛓️' }
+    { name: "Lança", type: "equipamento", effect: { maxHp: 100, attackPattern: 'line' }, symbol: '🔱' },
+    { name: "Mangual", type: "equipamento", effect: { maxHp: 100, attackPattern: 'wide' }, symbol: '⛓️' }
   ];
   const numItems = 2 + Math.floor(dungeonLevel / 3);
   for (let i = 0; i < numItems; i++) {
@@ -283,7 +283,7 @@ export function applyItemEffect(item) {
     playerState.hp = Math.min(playerState.maxHp, playerState.hp + item.effect.heal);
     addLog(`Você recuperou ${playerState.hp - before} HP.`);
   }
-  if (item.effect.maxHp) { playerState.maxHp += item.effect.maxHp; playerState.hp = Math.min(playerState.hp + item.effect.maxHp, playerState.maxHp); }
+  if (item.effect.maxHp) { playerState.maxHp = item.effect.maxHp; playerState.hp = Math.min(playerState.maxHp, playerState.hp); }
   if (item.effect.attackPattern) playerState.attackPattern = item.effect.attackPattern;
   updateUI();
 }
