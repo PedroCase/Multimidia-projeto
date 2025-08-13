@@ -64,9 +64,10 @@ export function nextLevel() {
 
 export function gameOver() {
   showModal(`Você foi derrotado no nível ${dungeonLevel}... O ciclo recomeça.`, true);
+  resetGame();
 }
 
-export function resetGame() {
+function resetGame() {
   dungeonLevel = 1;
   playerState.maxHp = 100;
   playerState.hp = 100;
