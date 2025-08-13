@@ -61,7 +61,7 @@ var playerState = {
 var messageLog = [];
 
 // Elementos de UI (preenchidos no bootstrap)
-var hpValueEl, hpBarEl, attackValueEl, attackPatternEl, equippedItemEl,
+var hpValueEl, hpBarEl, attackValueEl, equippedItemEl,
     inventoryListEl, dungeonLevelEl, logListEl, modalEl, modalTextEl, modalButton,
     pauseOverlay, resumeButton, pauseButton, restartButton;
 

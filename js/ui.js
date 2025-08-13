@@ -5,7 +5,6 @@ export function updateUI() {
   hpValueEl.textContent = `${playerState.hp}/${playerState.maxHp}`;
   hpBarEl.style.width = `${(playerState.hp / playerState.maxHp) * 100}%`;
   attackValueEl.textContent = playerState.attack.toFixed(2);
-  attackPatternEl.textContent = playerState.attackPattern.charAt(0).toUpperCase() + playerState.attackPattern.slice(1);
   equippedItemEl.textContent = equippedItemEl.textContent = playerState.equippedItem
     ? `${playerState.equippedItem.symbol} ${playerState.equippedItem.name}`
     : "Nenhum";

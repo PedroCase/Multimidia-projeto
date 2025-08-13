@@ -13,7 +13,6 @@ function bootstrap() {
   hpValueEl = document.getElementById('hp-value');
   hpBarEl = document.getElementById('hp-bar');
   attackValueEl = document.getElementById('attack-value');
-  attackPatternEl = document.getElementById('attack-pattern-value');
   equippedItemEl = document.getElementById('equipped-item');
   inventoryListEl = document.getElementById('inventory-list');
   dungeonLevelEl = document.getElementById('dungeon-level');
