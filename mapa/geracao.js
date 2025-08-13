@@ -2,10 +2,10 @@
 
 // Gera um inteiro aleatório entre 0 e 2^32-1
 function RandomSeed(seed) {
-    let m = 1000000009, a = 998244353, c = 1013904223, d = 35436, state = seed;
+    let m = 1000000007, a = 998244353, c = 1013904223, d = 35436, state = seed;
     return function() {
         state = (a * state + (c^state^d)) % m;
-        return Math.floor(Math.random()*m);
+        return state;
     };
 }
 function rangeRandom(l, r, rand){ return l + rand()%(r-l+1); }
@@ -13,7 +13,7 @@ function rangeRandom(l, r, rand){ return l + rand()%(r-l+1); }
 
 const MAX_SALAS = 25;
 const MIN_SALAS = 7;
-const MAP_MAX_TILES = 40;
+const MAP_MAX_TILES = 30;
 const MAP_MIN_TILES = 10;
 const TIPOS_DE_SALA = ["areasegura", "tesouro", "inimigos", "inimigos", "miniboss", "corredor", "npcs"]
 const TIPOS_SALA_END = ["tesouro", "tesouro", "tesouro", "npcs"] //salas sem saída
@@ -111,12 +111,14 @@ class Sala {
 }
 // BFS considerando chaves já obtidas
 function bfs(salas, inicio = 0, travas = new Set()) {
-    const fila = [inicio];
-    const visitado = new Set([inicio]);
-    const profundidade = { [inicio]: 0 };
-    const anterior = {};
+    let fila = [inicio];
+    let visitado = new Set([inicio]);
+    let profundidade = { [inicio]: 0 };
+    let anterior = {};
 
-    while (fila.length) {
+    let cnt = 0;
+    while(fila.length && cnt < 1000) {
+        cnt += 1;
         const atual = fila.shift();
         for (const viz of salas[atual].vizinhas) {
             const id = viz.sala.id;
@@ -139,14 +141,14 @@ function gerarMapa(seed) {
     // Aproximadamente metade das conexões principais (arestas da árvore) serão trancadas
     const numPortasTrancadas = Math.max(1, Math.floor((quantidadeSalas - 1) / 2));
     const numCiclosExtras = 2 + rand() % (1 + (quantidadeSalas - numPortasTrancadas));
-    const salas = [];
+    let salas = [];
 
     // Cria salas
     for (let i = 0; i < quantidadeSalas; i++) {
         salas.push(new Sala(i));
     }
 
-    const arestas = [];
+    let arestas = [];
     // 1. Árvore base
     for (let i = 1; i < quantidadeSalas; i++) {
         const j = rand() % i;
@@ -155,14 +157,15 @@ function gerarMapa(seed) {
     }
 
     // 2. Portas trancadas + distribuição de chaves
-    const travas = new Set();
-    const portas = [];
+    let travas = new Set();
+    let portas = [];
     for (let k = 0; k < numPortasTrancadas; k++) {
         let a, b, idx, tent = 0;
         do {
             idx = rand() % arestas.length;
             [a, b] = arestas[idx];
-        } while ((salas[a].travadaCom || salas[b].travadaCom) && ++tent < 1000);
+            tent+=1;
+        } while ((salas[a].travadaCom || salas[b].travadaCom) && tent < 1000);
 
         const chaveId = `chave_${k}`;
         // marca a porta bloqueada
@@ -202,14 +205,16 @@ function gerarMapa(seed) {
         }
         tentaComp = 0;
         
-        const regiao = Array.from(acessiveis);
-        const conectados = new Set();
+        let regiao = Array.from(acessiveis);
+        let conectados = new Set();
 
         do {
             a = regiao[rand() % regiao.length];
             b = regiao[rand() % regiao.length];
+            tent += 1;
         } while ((a === b || conectados.has(`${a},${b}`) || conectados.has(`${b},${a}`) ||
-                 salas[a].vizinhas.some(v => v.sala.id === b)) && ++tent < 50);
+                 salas[a].vizinhas.some(v => v.sala.id === b)) && tent < 50);
+        
         if (tent < 50) {
             salas[a].conectar(salas[b]);
             conectados.add(`${a},${b}`);
@@ -218,22 +223,22 @@ function gerarMapa(seed) {
 
     // 4. Escolher sala final:
     
-    const ultimaPorta = portas[portas.length - 1]; // Usa a última porta criada como entrada para o ramo final
+    let ultimaPorta = portas[portas.length - 1]; // Usa a última porta criada como entrada para o ramo final
     // componente inacessível sem chave da última porta
-    const { acessiveis: antesFinal } = bfs(salas, 0, new Set(Array.from(travas).filter(id => id !== ultimaPorta.chaveId)));
-    const ladoFinal = salas.map(s => s.id) .filter(id => !antesFinal.has(id));  // salas do outro lado
+    let { acessiveis: antesFinal } = bfs(salas, 0, new Set(Array.from(travas).filter(id => id !== ultimaPorta.chaveId)));
+    let ladoFinal = salas.map(s => s.id) .filter(id => !antesFinal.has(id));  // salas do outro lado
     
     let salaFinal = ladoFinal[0]; // escolhe a mais distante dentro do ramo final
     let maxP = -1;
-    const profFinal = bfs(salas, ultimaPorta.b, travas).profundidade;
+    let profFinal = bfs(salas, ultimaPorta.b, travas).profundidade;
     
-    for (const id of ladoFinal) {
+    for (let id of ladoFinal) {
         if (profFinal[id] > maxP) { maxP = profFinal[id]; salaFinal = id; }
     }
     salas[salaFinal].final = true;
 
     // 5. pra marcar a profundidade de cada sala
-    const profGeral = bfs(salas, 0).profundidade;
+    let profGeral = bfs(salas, 0).profundidade;
 
     // 6. Classificar tipos de sala
     salas.forEach(sala => {
@@ -255,11 +260,13 @@ function gerarMapa(seed) {
 }
 
 function atribuirBiomas(salas, rand, numCentros = 4) {
-    const fila = []; // Escolhe algumas salas aleatórias como centros de bioma
-    const visitados = new Set();
+    let fila = []; // Escolhe algumas salas aleatórias como centros de bioma
+    let visitados = new Set();
     
-    while(fila.length < numCentros && fila.length < salas.length){
-        const idx = rand() % salas.length;
+    let itera = 0;
+    while(fila.length < numCentros && fila.length < salas.length && itera < 1000){
+        itera += 1;
+        let idx = rand() % salas.length;
         if(visitados.has(idx)) continue;
         salas[idx].bioma = TIPOS_BIOMAS[rand() % TIPOS_BIOMAS.length];
         fila.push(idx);
