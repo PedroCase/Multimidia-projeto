@@ -100,12 +100,12 @@ export function placeEntities() {
 
   items = [];
   const possibleItems = [
-    { name: "Espada", type: "equipamento", effect: { maxHp: 100, attackPattern: 'default' }, symbol: '⚔️' },
-    { name: "Tomo Arcano", type: "equipamento", effect: { maxHp: 100, attackPattern: 'magic' }, symbol: '📖' },
-    { name: "Escudo", type: "equipamento", effect: { maxHp: 150, attackPattern: 'shield' }, symbol: '🛡️' },
+    { name: "Espada", type: "equipamento", effect: { shield: false, attackPattern: 'default' }, symbol: '⚔️' },
+    { name: "Tomo Arcano", type: "equipamento", effect: { shield: false, attackPattern: 'magic' }, symbol: '📖' },
+    { name: "Escudo", type: "equipamento", effect: { shield: true, attackPattern: 'shield' }, symbol: '🛡️' },
     { name: "Poção de Cura", type: "consumivel", effect: { heal: 25 }, symbol: '🧪' },
-    { name: "Lança", type: "equipamento", effect: { maxHp: 100, attackPattern: 'line' }, symbol: '🔱' },
-    { name: "Mangual", type: "equipamento", effect: { maxHp: 100, attackPattern: 'wide' }, symbol: '⛓️' }
+    { name: "Lança", type: "equipamento", effect: { shield: false, attackPattern: 'line' }, symbol: '🔱' },
+    { name: "Mangual", type: "equipamento", effect: { shield: false, attackPattern: 'wide' }, symbol: '⛓️' }
   ];
   const numItems = 2 + Math.floor(dungeonLevel / 3);
   for (let i = 0; i < numItems; i++) {
@@ -312,7 +312,7 @@ export function applyItemEffect(item) {
     playerState.hp = Math.min(playerState.maxHp, playerState.hp + item.effect.heal);
     addLog(`Você recuperou ${playerState.hp - before} HP.`);
   }
-  if (item.effect.maxHp) { if (playerState.maxHp > item.effect.maxHp) { playerState.maxHp = item.effect.maxHp; playerState.hp = Math.min(playerState.maxHp, playerState.hp); } else { playerState.hp = Math.min(item.effect.maxHp, playerState.hp + (item.effect.maxHp - playerState.maxHp)); playerState.maxHp = item.effect.maxHp; } }
+  if (item.effect.shield !== playerState.equippedItem.effect.shield) { if (item.effect.shield == true) { playerState.maxHp = Math.ceil(playerState.maxHp * 1.2); playerState.hp = Math.ceil(playerState.hp * 1.2); } else { playerState.maxHp = Math.ceil(playerState.maxHp * (5/6)); playerState.hp = Math.ceil(playerState.hp * (5/6)); } }
   if (item.effect.attackPattern) playerState.attackPattern = item.effect.attackPattern;
   updateUI();
 }
@@ -552,7 +552,7 @@ export function playerAttack() {
         enemyDefeated = true;
         if (enemy.type === 'BOSS') {
           showModal("O CHEFE 🐲 foi derrotado! O labirinto parece tremer em alívio.", false);
-
+          playerState.maxHp += 50;
           // Coloca uma porta na posição do boss morto
           map[enemy.y][enemy.x] = TILES.BOSS_DOOR;
           // Salva o estado da sala com a nova porta

@@ -50,7 +50,7 @@ var playerState = {
   equippedItem: { 
     name: "Espada", 
     type: "equipamento", 
-    effect: { attackPattern: 'default' }, 
+    effect: { attackPattern: 'default', shield: false }, 
     symbol: '⚔️' 
   },
   attackPattern: 'default',
