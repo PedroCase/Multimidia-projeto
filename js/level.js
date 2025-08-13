@@ -1,6 +1,6 @@
 // level.js - carregamento de salas e progressão
 import { placeEntities } from './gameplay.js';
-import { addLog } from './ui.js';
+import { addLog, showModal } from './ui.js';
 
 export function initLevel() {
   const seed = Math.floor(Date.now() / 100000);
