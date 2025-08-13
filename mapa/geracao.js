@@ -39,37 +39,6 @@ const wallTiles = new Set([TILES.WALL, TILES.TREE, TILES.ROCK, TILES.BRICK, TILE
 const floorTiles = new Set([ TILES.FLOOR, TILES.MUD, TILES.SAND, // TILES.GRASS, TILES.PATH, TILES.STONE_FLOOR, 
     ]);
 
-function getTileColor(tile, sala){
-    let fill = "#000";
-    switch (tile) {
-        case TILES.WALL:
-            fill = {
-                caverna: "#444", floresta: "#2e5c2e",
-                pantano: "#2c3f48", deserto: "#d2b48c",
-                ruins: "#555", volcano: "#333"
-            }[sala.bioma] || "#444";
-            break;
-        case TILES.FLOOR:
-            fill = { caverna: "#888", floresta: "#cce5cc",
-                pantano: "#99aabb", deserto: "#f4e4b2",
-                ruins: "#aaa", volcano: "#aa5500"
-            }[sala.bioma] || "#888";
-            break;
-        case TILES.TREE: fill = "#228b22"; break;
-        case TILES.WATER: fill = "#336677"; break;
-        case TILES.MUD: fill = "#553"; break;
-        case TILES.SAND: fill = "#ffe4a1"; break;
-        case TILES.ROCK: fill = "#555555"; break;
-        case TILES.BRICK: fill = "#aa7f4d"; break;
-        case TILES.RUBBLE: fill = "#888"; break;
-        case TILES.LAVA: fill = "#cc3300"; break;
-        case TILES.ASH: fill = "#666666"; break;
-        case TILES.DOOR: fill = "#e6ad58ff"; break;
-        case TILES.CLOSED_DOOR: fill = "#da2b2bff"; break;
-        default: fill = "#f00"; break;
-    }
-    return fill;
-}
 
 class Sala {
     constructor(id) {
