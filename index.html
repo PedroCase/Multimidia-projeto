@@ -10,80 +10,141 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css" />
-  <style>
-    /* Ajuste para painel lateral scrollável */
-    #ui-panel {
-      max-height: 80vh;       /* não ultrapassar altura da tela */
-      overflow-y: auto;        /* rolagem vertical */
-      box-sizing: border-box;  /* incluir padding/border no cálculo */
-    }
-  </style>
+<style>
+    body {
+  margin: 0;
+  font-family: 'Press Start 2P', monospace;
+  background: black;
+}
+
+header {
+  padding: 10px;
+  background: #222;
+  color: white;
+  text-align: center;
+}
+
+/* Painel esquerdo fixo */
+#log-panel {
+  position: fixed;
+  top: 60px; /* altura do header */
+  left: 0;
+  width: 250px;
+  height: calc(100% - 60px);
+  background: #111;
+  color: white;
+  overflow-y: auto;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* Painel direito fixo */
+#ui-panel {
+  position: fixed;
+  top: 60px;
+  right: 0;
+  width: 250px;
+  height: calc(100% - 60px);
+  background: #111;
+  color: white;
+  overflow-y: auto;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* Canvas central entre os dois painéis */
+#game-wrapper {
+  position: fixed;
+  top: 60px;
+  left: 250px; /* espaço do painel esquerdo */
+  right: 250px; /* espaço do painel direito */
+  bottom: 0;
+  overflow: auto;
+  background: black;
+}
+
+#gameCanvas {
+  display: block;
+  background: black;
+  margin: auto;
+}
+</style>
+
 </head>
 <body>
   <header>
     <h1>Labirinto Infinito</h1>
   </header>
-  <main>
-    <div id="game-container">
-      <canvas id="gameCanvas"></canvas>
-      <aside id="ui-panel" aria-label="Painel do jogador">
-        <section class="stat-block" aria-labelledby="player-title">
-          <h2 id="player-title">Jogador</h2>
-          <div class="stat-item">
-            <span>Nível do Labirinto:</span>
-            <span id="dungeon-level">1</span>
-          </div>
-          <div class="stat-item">
-            <span>HP:</span>
-            <span id="hp-value">100/100</span>
-          </div>
-          <div id="hp-bar-container">
-            <div id="hp-bar"></div>
-          </div>
-        </section>
-        <section class="stat-block" aria-labelledby="class-title">
-          <h2 id="class-title" class="class-title"><span id="class-name">Aventureiro</span></h2>
-          <div class="stat-item">
-            <span>Ataque:</span>
-            <span id="attack-value">5</span>
-          </div>
-          <div class="stat-item">
-            <span>Ataque Padrão:</span>
-            <span id="attack-pattern-value">Padrão</span>
-          </div>
-        </section>
-        <section class="stat-block" aria-labelledby="inventory-title">
-          <h2 id="inventory-title">Inventário</h2>
-          <ul id="inventory-list">
-            <li>(Vazio)</li>
-          </ul>
-        </section>
-        <section class="stat-block" aria-labelledby="log-title">
-          <h2 id="log-title">Registro</h2>
-          <ul id="log-list">
-            <li>Explore o labirinto...</li>
-          </ul>
-        </section>
-        <button id="pause-button" type="button">⏸️ Pause</button>
-      </aside>
-    </div>
+<main>
+  <!-- Painel de Registro fixo à esquerda -->
+  <aside id="log-panel">
+    <section class="stat-block" aria-labelledby="log-title">
+      <h2 id="log-title">Registro</h2>
+      <ul id="log-list">
+        <li>Explore o labirinto...</li>
+      </ul>
+    </section>
+  </aside>
 
-    <div id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-text">
-      <div id="modal-content">
-        <p id="modal-text">Texto do modal.</p>
-        <button id="modal-button" type="button">OK</button>
-      </div>
-    </div>
+  <!-- Canvas central rolável -->
+  <div id="game-wrapper">
+    <canvas id="gameCanvas"></canvas>
+  </div>
 
-    <div id="pause-overlay" aria-hidden="true">
-      <div id="pause-box">
-        <h2>Jogo Pausado</h2>
-        <p>Pressione ESC ou clique em "Retomar" para continuar.</p>
-        <button id="resume-button" type="button">▶️ Retomar</button>
-        <button id="restart-button" type="button">🔄 Reiniciar</button>
+  <!-- Painel do jogador fixo à direita -->
+  <aside id="ui-panel">
+    <section class="stat-block" aria-labelledby="player-title">
+      <h2 id="player-title">Jogador</h2>
+      <div class="stat-item">
+        <span>Nível do Labirinto:</span>
+        <span id="dungeon-level">1</span>
       </div>
+      <div class="stat-item">
+        <span>HP:</span>
+        <span id="hp-value">100/100</span>
+      </div>
+      <div id="hp-bar-container">
+        <div id="hp-bar"></div>
+      </div>
+    </section>
+    <section class="stat-block" aria-labelledby="class-title">
+      <h2 id="class-title" class="class-title"><span id="class-name">Aventureiro</span></h2>
+      <div class="stat-item">
+        <span>Ataque:</span>
+        <span id="attack-value">5</span>
+      </div>
+      <div class="stat-item">
+        <span>Ataque Padrão:</span>
+        <span id="attack-pattern-value">Padrão</span>
+      </div>
+    </section>
+    <section class="stat-block" aria-labelledby="inventory-title">
+      <h2 id="inventory-title">Inventário</h2>
+      <ul id="inventory-list">
+        <li>(Vazio)</li>
+      </ul>
+    </section>
+    <button id="pause-button" type="button">⏸️ Pause</button>
+  </aside>
+</main>
+
+  <!-- Modal -->
+  <div id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-text">
+    <div id="modal-content">
+      <p id="modal-text">Texto do modal.</p>
+      <button id="modal-button" type="button">OK</button>
     </div>
-  </main>
+  </div>
+
+  <!-- Pause overlay -->
+  <div id="pause-overlay" aria-hidden="true">
+    <div id="pause-box">
+      <h2>Jogo Pausado</h2>
+      <p>Pressione ESC ou clique em "Retomar" para continuar.</p>
+      <button id="resume-button" type="button">▶️ Retomar</button>
+      <button id="restart-button" type="button">🔄 Reiniciar</button>
+    </div>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
   <script src="./mapa/geracao.js"></script>
