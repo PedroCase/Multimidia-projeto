@@ -1,12 +1,13 @@
 // ui.js - funções de UI e modal
-import { reorderInventory, useInventoryItem } from './gameplay.js';
+import { reorderInventory, useInventoryItem, applyItemEffect } from './gameplay.js';
 
 export function updateUI() {
   hpValueEl.textContent = `${playerState.hp}/${playerState.maxHp}`;
   hpBarEl.style.width = `${(playerState.hp / playerState.maxHp) * 100}%`;
   attackValueEl.textContent = playerState.attack.toFixed(2);
-  attackPatternEl.textContent = playerState.attackPattern.charAt(0).toUpperCase() + playerState.attackPattern.slice(1);
-  classNameEl.textContent = playerState.className;
+  equippedItemEl.textContent = equippedItemEl.textContent = playerState.equippedItem
+    ? `${playerState.equippedItem.symbol} ${playerState.equippedItem.name}`
+    : "Nenhum";
   dungeonLevelEl.textContent = dungeonLevel;
 
   inventoryListEl.innerHTML = '';
@@ -51,10 +52,12 @@ export function updateUI() {
         equipBtn.title = 'Equipar este item';
         equipBtn.style.fontFamily = "'Press Start 2P', cursive";
         equipBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          // Aqui você decide o efeito de equipar:
-          applyItemEffect(item); // Aplica os efeitos
+           e.stopPropagation();
+          playerState.inventory.splice(idx, 1);
+          playerState.equippedItem = item;
+          applyItemEffect(item);
           addLog(`Você equipou ${item.name} ${item.symbol}.`);
+          updateUI();
         });
         controls.appendChild(equipBtn);
       }

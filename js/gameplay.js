@@ -76,12 +76,12 @@ export function placeEntities() {
 
   items = [];
   const possibleItems = [
-    { name: "Espada", type: "equipamento", effect: { attack: 5, attackPattern: 'default' }, symbol: '⚔️' },
-    { name: "Tomo Arcano", type: "equipamento", effect: { attack: 3, attackPattern: 'magia' }, symbol: '📖' },
-    { name: "Escudo", type: "equipamento", effect: { maxHp: 20 }, symbol: '🛡️' },
+    { name: "Espada", type: "equipamento", effect: { maxHp: 100, attackPattern: 'default' }, symbol: '⚔️' },
+    { name: "Tomo Arcano", type: "equipamento", effect: { maxHp: 100, attackPattern: 'magic' }, symbol: '📖' },
+    { name: "Escudo", type: "equipamento", effect: { maxHp: 150, attackPattern: 'shield' }, symbol: '🛡️' },
     { name: "Poção de Cura", type: "consumivel", effect: { heal: 25 }, symbol: '🧪' },
-    { name: "Lança", type: "equipamento", effect: { attack: 3, attackPattern: 'line' }, symbol: '🔱' },
-    { name: "Mangual", type: "equipamento", effect: { attack: 2, attackPattern: 'wide' }, symbol: '⛓️' }
+    { name: "Lança", type: "equipamento", effect: { maxHp: 100, attackPattern: 'line' }, symbol: '🔱' },
+    { name: "Mangual", type: "equipamento", effect: { maxHp: 100, attackPattern: 'wide' }, symbol: '⛓️' }
   ];
   const numItems = 2 + Math.floor(dungeonLevel / 3);
   for (let i = 0; i < numItems; i++) {
@@ -119,7 +119,7 @@ export function movePlayer(dx, dy) {
 
   const newX = player.x + dx;
   const newY = player.y + dy;
-  
+
   if (enemies.some(e => e.x === newX && e.y === newY)) return;
 
   if (newX < 0 || newX >= MAP_WIDTH_TILES || newY < 0 || newY >= MAP_HEIGHT_TILES) return;
@@ -213,8 +213,10 @@ export function getDynamicDialogue(npc) {
   if (nearbyDoor) return "A saida esta proxima... sinto uma brisa.";
   if (nearbyEnemies > 3) return "Esta area esta infestada! Tenha cautela.";
 
+  if (playerState.attackPattern === 'default') return "Essa ⚔️ atinge todos os inimigos ao seu redor!";
   if (playerState.attackPattern === 'line') return "Essa 🔱 tem um otimo alcance!";
-  if (playerState.attackPattern === 'magia') return "Esse 📖 permite atacar inimigos distantes!";
+  if (playerState.attackPattern === 'magic') return "Esse 📖 permite atacar muito inimigos mas cuidado com seus pontos cegos!";
+  if (playerState.attackPattern === 'shield') return "Esse 🛡️ deixa você muito durão, mas reduz seu alcance!";
   if (playerState.attackPattern === 'wide') return "Com essa ⛓️ voce acerta varios de uma vez!";
 
   const fallbackDialogues = [
@@ -281,9 +283,7 @@ export function applyItemEffect(item) {
     playerState.hp = Math.min(playerState.maxHp, playerState.hp + item.effect.heal);
     addLog(`Você recuperou ${playerState.hp - before} HP.`);
   }
-  if (item.effect.attack) playerState.attack += item.effect.attack;
-  if (item.effect.maxHp) { playerState.maxHp += item.effect.maxHp; playerState.hp = Math.min(playerState.hp + item.effect.maxHp, playerState.maxHp); }
-  if (item.effect.class) playerState.className = item.effect.class;
+  if (item.effect.maxHp) { playerState.maxHp = item.effect.maxHp; playerState.hp = Math.min(playerState.maxHp, playerState.hp); }
   if (item.effect.attackPattern) playerState.attackPattern = item.effect.attackPattern;
   updateUI();
 }
@@ -389,7 +389,6 @@ export function moveEnemies() {
     if (adjacent) {
       playerState.hp -= enemy.attack;
       addLog(`Inimigo (${enemy.symbol}) atacou, causando ${enemy.attack} de dano.`);
-      playerState.attack *= 0.9;
       playerWasHit = true;
       enemy.cooldown = enemy.moveCooldown || 0;
       return;
@@ -446,6 +445,8 @@ export function getAttackTiles() {
       tiles.push({ x: x + dx, y: y + dy });
       tiles.push({ x: x + dx * 2, y: y + dy * 2 });
       tiles.push({ x: x + dx * 3, y: y + dy * 3 });
+      tiles.push({ x: x + dx * 4, y: y + dy * 4 });
+      tiles.push({ x: x + dx * 5, y: y + dy * 5 });
       break;
     case 'wide': {
       const p_dx_wide = dy;
@@ -458,13 +459,26 @@ export function getAttackTiles() {
       tiles.push({ x: x + dx * 2 - p_dx_wide, y: y + dy * 2 - p_dy_wide });
       break;
     }
-    case 'magia':
+    case 'magic': {
+      const p_dx_wide = dy;
+      const p_dy_wide = -dx;
       tiles.push({ x: x + dx, y: y + dy });
       tiles.push({ x: x + dx * 2, y: y + dy * 2 });
       tiles.push({ x: x + dx * 3, y: y + dy * 3 });
-      tiles.push({ x: x + dx * 4, y: y + dy * 4 });
-      tiles.push({ x: x + dx * 5, y: y + dy * 5 });
+      tiles.push({ x: x + dx * 2 + p_dx_wide, y: y + dy * 2 + p_dy_wide });
+      tiles.push({ x: x + dx * 2 - p_dx_wide, y: y + dy * 2 - p_dy_wide });
+      tiles.push({ x: x + dx * 3 + p_dx_wide, y: y + dy * 3 + p_dy_wide });
+      tiles.push({ x: x + dx * 3 - p_dx_wide, y: y + dy * 3 - p_dy_wide });
       break;
+    }
+    case 'shield': {
+      const p_dx_wide = dy;
+      const p_dy_wide = -dx;
+      tiles.push({ x: x + dx, y: y + dy });
+      tiles.push({ x: x + dx + p_dx_wide, y: y + dy + p_dy_wide });
+      tiles.push({ x: x + dx - p_dx_wide, y: y + dy - p_dy_wide });
+      break;
+    }
     default:
       for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
         if (i === 0 && j === 0) continue;
@@ -504,7 +518,7 @@ export function playerAttack() {
       hit = true;
       if (enemy.hp <= 0) {
         addLog(`Inimigo (${enemy.symbol}) derrotado!`);
-        playerState.attack *= 1.25;
+        playerState.attack *= 1.1;
         playerState.hp = Math.min(playerState.hp + 2, 100);
         enemyDefeated = true;
         if (enemy.type === 'BOSS') showModal("O CHEFE 🐲 foi derrotado! O labirinto parece tremer em alívio.", false);
