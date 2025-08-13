@@ -133,15 +133,30 @@ export function movePlayer(dx, dy) {
     checkNpcInteraction();
     moveEnemies();
     updateUI();
-  } else if (targetTile === TILES.DOOR) {
+  } 
+  else if (targetTile === TILES.DOOR) {
     // Porta pode ser trancada ou não; usar mapeamento por porta->vizinha
     const viz = salas[currentSala].getVizinha(newX, newY);
     const outroLado = viz.sala.getPortaToViz(currentSala);
+    
+    // Porta destrancada: transita sem consumir chave
+    const prevSala = currentSala;
+    currentSala = viz.sala.id;
+    loadSala(currentSala);
+    if (audioInitialized) sounds.door.triggerAttackRelease("8n");
+    if (outroLado) { player.x = outroLado.x; player.y = outroLado.y; }
+    addLog(`Você atravessou a porta para a sala ${viz.sala.id}.`);
+    updateUI();
+    return;
+  } 
+  else if(targetTile === TILES.CLOSED_DOOR)
+  {
+    const viz = salas[currentSala].getVizinha(newX, newY);
+    const outroLado = viz.sala.getPortaToViz(currentSala);
 
-    if (viz.travada) {
       if (playerState.keys > 0) {
         // Abrir porta na sala atual
-        map[newY][newX] = TILES.FLOOR;
+        map[newY][newX] = TILES.DOOR;
         if (!salas[currentSala]._state) salas[currentSala]._state = { openDoors: [] };
         salas[currentSala]._state.openDoors = Array.from(new Set([...(salas[currentSala]._state.openDoors || []).map(p => `${p.x},${p.y}`), `${newX},${newY}`])).map(s => ({ x: +s.split(',')[0], y: +s.split(',')[1] }));
 
@@ -157,7 +172,7 @@ export function movePlayer(dx, dy) {
 
         // Abre a porta correspondente na sala de destino
         if (outroLado) {
-          map[outroLado.y][outroLado.x] = TILES.FLOOR;
+          map[outroLado.y][outroLado.x] = TILES.DOOR;
           if (!salas[currentSala]._state) salas[currentSala]._state = { openDoors: [] };
           salas[currentSala]._state.openDoors = Array.from(new Set([...(salas[currentSala]._state.openDoors || []).map(p => `${p.x},${p.y}`), `${outroLado.x},${outroLado.y}`])).map(s => ({ x: +s.split(',')[0], y: +s.split(',')[1] }));
           saveCurrentSalaState();
@@ -174,20 +189,9 @@ export function movePlayer(dx, dy) {
         if (outroLado) { player.x = outroLado.x; player.y = outroLado.y; }
         updateUI();
         return;
-      } else {
-        addLog("A 🚪 está trancada. Encontre a 🔑.");
       }
-    } else {
-      // Porta destrancada: transita sem consumir chave
-      const prevSala = currentSala;
-      currentSala = viz.sala.id;
-      loadSala(currentSala);
-      if (audioInitialized) sounds.door.triggerAttackRelease("8n");
-      if (outroLado) { player.x = outroLado.x; player.y = outroLado.y; }
-      addLog(`Você atravessou a porta para a sala ${viz.sala.id}.`);
-      updateUI();
+      addLog("A 🚪 está trancada. Encontre a 🔑.");
       return;
-    }
   }
 }
 

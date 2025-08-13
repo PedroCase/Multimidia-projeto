@@ -40,6 +40,7 @@ export function draw() {
       const centerX = x * TILE_SIZE + TILE_SIZE / 2;
       const centerY = y * TILE_SIZE + TILE_SIZE / 2 + 1;
       if (tile === TILES.DOOR) { ctx.fillText('🚪', centerX, centerY); }
+      else if (tile === TILES.CLOSED_DOOR) { ctx.fillText('🔒', centerX, centerY); }
       else if (tile === TILES.KEY) { ctx.fillText('🔑', centerX, centerY); }
     }
   }

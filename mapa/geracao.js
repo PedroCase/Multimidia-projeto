@@ -23,6 +23,7 @@ const TILES = {
     WALL: 0,
     FLOOR: 1,
     DOOR: 5,
+    CLOSED_DOOR: 20,
     KEY: 6, // adicionado para compatibilidade com o jogo
     TREE: 11,
     WATER: 12,
@@ -63,7 +64,8 @@ function getTileColor(tile, sala){
         case TILES.RUBBLE: fill = "#888"; break;
         case TILES.LAVA: fill = "#cc3300"; break;
         case TILES.ASH: fill = "#666666"; break;
-        case TILES.DOOR: fill = "#ff9900"; break;
+        case TILES.DOOR: fill = "#e6ad58ff"; break;
+        case TILES.CLOSED_DOOR: fill = "#da2b2bff"; break;
         default: fill = "#f00"; break;
     }
     return fill;
@@ -328,8 +330,11 @@ function generateMap(sala, rand){
     // Garante alinhamento 1:1 entre vizinhas e portas pelo índice
     let portasAlocadas = sala.vizinhas.map((_, i) => portasCandidatas[i] || portasCandidatas[i % Math.max(1, portasCandidatas.length)] || { x: 1, y: 1 });
 
-    for (let {x, y} of portasAlocadas) sala.map[y][x] = TILES.DOOR;
     sala.portas = portasAlocadas;
+    for (let {x, y} of portasAlocadas){
+        let viz = sala.getVizinha(x, y);
+        sala.map[y][x] = viz.travada ? TILES.CLOSED_DOOR : TILES.DOOR;
+    }
 }
 
 function getDoorPositions(map, P, rand) {

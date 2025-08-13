@@ -17,7 +17,7 @@ export function loadSala(id) {
   canvas.width = MAP_WIDTH_TILES * TILE_SIZE;
   canvas.height = MAP_HEIGHT_TILES * TILE_SIZE;
 
-  // Sempre reconstroi o mapa base a partir do gerador
+  // Clona mapa para evitar alterar sala.map diretamente
   map = sala.map.map(r => r.slice());
 
   // Se já houver estado salvo desta sala, restaura
@@ -32,6 +32,14 @@ export function loadSala(id) {
       const { x, y } = sala._state.key.pos;
       map[y][x] = TILES.KEY;
     }
+
+    // Restaura todas as portas originais
+    if (sala.portas) {
+      for (const { x, y } of sala.portas) {
+        const isOpen = sala._state.openDoors?.some(d => d.x === x && d.y === y);
+        map[y][x] = isOpen ? TILES.DOOR : TILES.CLOSED_DOOR;
+      }
+    }
   } else {
     // Primeira visita: gera entidades e salva estado inicial
     placeEntities();
@@ -45,6 +53,7 @@ export function loadSala(id) {
       if (keyPos) break;
     }
 
+    // Salva estado inicial da sala
     sala._state = {
       enemies: enemies.map(e => ({ ...e })),
       items: items.map(i => ({ ...i })),
@@ -53,6 +62,18 @@ export function loadSala(id) {
       key: keyPos ? { pos: keyPos, picked: false } : null,
       openDoors: [],
     };
+
+    // Também salva lista de portas originais
+    if (!sala.portas) {
+      sala.portas = [];
+      for (let y = 0; y < MAP_HEIGHT_TILES; y++) {
+        for (let x = 0; x < MAP_WIDTH_TILES; x++) {
+          if (map[y][x] === TILES.DOOR || map[y][x] === TILES.CLOSED_DOOR) {
+            sala.portas.push({ x, y });
+          }
+        }
+      }
+    }
   }
 }
 
@@ -102,11 +123,14 @@ export function saveCurrentSalaState() {
     sala._state.key.picked = map[y][x] !== TILES.KEY;
   }
 
-  // Persistir portas abertas (viram piso)
-  try {
-    const opened = (salas[currentSala].portas || []).filter(p => map[p.y][p.x] === TILES.FLOOR);
-    sala._state.openDoors = opened.map(({ x, y }) => ({ x, y }));
-  } catch (_) { /* no-op */ }
+  // Persistir portas abertas
+  if (sala.portas) {
+    sala._state.openDoors = sala.portas
+      .filter(p => map[p.y][p.x] === TILES.DOOR)
+      .map(p => ({ x: p.x, y: p.y }));
+  } else {
+    sala._state.openDoors = [];
+  }
 }
 
 export function init() { initLevel(); }
