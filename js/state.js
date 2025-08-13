@@ -16,13 +16,13 @@ var MAP_HEIGHT_TILES = 30;
 // Constantes de jogo
 var PLAYER_EMOJI = '🧔🏿';
 var ENEMY_TYPES = {
-  GRUNT:   { symbols: ['👺','💀'], hp: 10,  attack: 2, ai: 'melee',   fov: 6,  moveCooldown: 0 },
-  TANK:    { symbols: ['🗿','🛡️'], hp: 30,  attack: 1, ai: 'melee',   fov: 5,  moveCooldown: 1 },
-  BRUTE:   { symbols: ['🦖','🐻'],  hp: 40,  attack: 2, ai: 'melee',   fov: 5,  moveCooldown: 2 },
-  ASSASSIN:{ symbols: ['🧛🏻‍♀️','🦂'],  hp: 8,   attack: 4, ai: 'melee',   fov: 9,  moveCooldown: 0 },
-  BOSS:    { symbols: ['🐲'],       hp: 100, attack: 5, ai: 'melee',   fov: 8,  moveCooldown: 0 },
+  GRUNT:   { symbols: ['👺','💀', '🧟‍♂️', '👻'], hp: 10,  attack: 2, ai: 'melee',   fov: 6,  moveCooldown: 0 },
+  TANK:    { symbols: ['🗿', '🦍'], hp: 30,  attack: 1, ai: 'melee',   fov: 5,  moveCooldown: 1 },
+  BRUTE:   { symbols: ['🦖','🐻','🦁'],  hp: 40,  attack: 2, ai: 'melee',   fov: 5,  moveCooldown: 2 },
+  ASSASSIN:{ symbols: ['🧛🏻‍♀️','🦂','🧛🏻‍♀️','🦂', '🧛🏻‍♀️','🦂','🧛🏻‍♀️','🦂', '🐇'],  hp: 8,   attack: 4, ai: 'melee',   fov: 9,  moveCooldown: 0 },
+  BOSS:    { symbols: ['🐲', '👹'],  hp: 100, attack: 5, ai: 'melee',   fov: 8,  moveCooldown: 0 },
   RANGED:  { symbols: ['🏹'], hp: 14,  attack: 3, ai: 'ranged',  fov: 10, moveCooldown: 0, range: 6 },
-  MAGE:    { symbols: ['👻'],hp: 12,  attack: 4, ai: 'ranged',  fov: 12, moveCooldown: 1, range: 7 },
+  MAGE:    { symbols: ['🧙‍♀️'],hp: 12,  attack: 4, ai: 'ranged',  fov: 12, moveCooldown: 1, range: 7 },
   SPAWNER: { symbols: ['👥','🥚'], hp: 22,  attack: 0, ai: 'spawner', fov: 6,  moveCooldown: 2, spawnRate: 3 }
 };
 var SPEECH_FONT = "10px 'Press Start 2P'";
