@@ -2,18 +2,18 @@
 
 // Gera um inteiro aleatório entre 0 e 2^32-1
 function RandomSeed(seed) {
-    let m = 1000000009, a = 998244353, c = 1013904223, d = 35436, state = seed;
+    let m = 1000000007, a = 998244353, c = 1013904223, d = 35436, state = seed;
     return function() {
         state = (a * state + (c^state^d)) % m;
-        return Math.floor(Math.random()*m);
+        return state;
     };
 }
 function rangeRandom(l, r, rand){ return l + rand()%(r-l+1); }
 
 
-const MAX_SALAS = 25;
-const MIN_SALAS = 7;
-const MAP_MAX_TILES = 40;
+const MAX_SALAS = 15;
+const MIN_SALAS = 5;
+const MAP_MAX_TILES = 30;
 const MAP_MIN_TILES = 10;
 const TIPOS_DE_SALA = ["areasegura", "tesouro", "inimigos", "inimigos", "miniboss", "corredor", "npcs"]
 const TIPOS_SALA_END = ["tesouro", "tesouro", "tesouro", "npcs"] //salas sem saída
@@ -111,12 +111,14 @@ class Sala {
 }
 // BFS considerando chaves já obtidas
 function bfs(salas, inicio = 0, travas = new Set()) {
-    const fila = [inicio];
-    const visitado = new Set([inicio]);
-    const profundidade = { [inicio]: 0 };
-    const anterior = {};
+    let fila = [inicio];
+    let visitado = new Set([inicio]);
+    let profundidade = { [inicio]: 0 };
+    let anterior = {};
 
-    while (fila.length) {
+    let cnt = 0;
+    while(fila.length && cnt < 1000) {
+        cnt += 1;
         const atual = fila.shift();
         for (const viz of salas[atual].vizinhas) {
             const id = viz.sala.id;
@@ -139,14 +141,14 @@ function gerarMapa(seed) {
     // Aproximadamente metade das conexões principais (arestas da árvore) serão trancadas
     const numPortasTrancadas = Math.max(1, Math.floor((quantidadeSalas - 1) / 2));
     const numCiclosExtras = 2 + rand() % (1 + (quantidadeSalas - numPortasTrancadas));
-    const salas = [];
+    let salas = [];
 
     // Cria salas
     for (let i = 0; i < quantidadeSalas; i++) {
         salas.push(new Sala(i));
     }
 
-    const arestas = [];
+    let arestas = [];
     // 1. Árvore base
     for (let i = 1; i < quantidadeSalas; i++) {
         const j = rand() % i;
@@ -155,14 +157,15 @@ function gerarMapa(seed) {
     }
 
     // 2. Portas trancadas + distribuição de chaves
-    const travas = new Set();
-    const portas = [];
+    let travas = new Set();
+    let portas = [];
     for (let k = 0; k < numPortasTrancadas; k++) {
         let a, b, idx, tent = 0;
         do {
             idx = rand() % arestas.length;
             [a, b] = arestas[idx];
-        } while ((salas[a].travadaCom || salas[b].travadaCom) && ++tent < 1000);
+            tent+=1;
+        } while ((salas[a].travadaCom || salas[b].travadaCom) && tent < 1000);
 
         const chaveId = `chave_${k}`;
         // marca a porta bloqueada
@@ -177,9 +180,9 @@ function gerarMapa(seed) {
         portas.push({ a, b, chaveId });
 
         // coloca chave na região acessível sem atravessar esta porta
-        const { acessiveis } = bfs(salas, 0, travas);
-        const possiveis = Array.from(acessiveis).filter(id => id !== a && id !== b);
-        const salaChave = salas[possiveis[rand() % possiveis.length]];
+        let { acessiveis } = bfs(salas, 0, travas);
+        let possiveis = Array.from(acessiveis);
+        let salaChave = salas[possiveis[Math.abs(rand() % possiveis.length)]];
         salaChave.chaves.push(chaveId);
         travas.add(chaveId);
 
@@ -189,7 +192,7 @@ function gerarMapa(seed) {
 
     // 3. Ciclos extras restritos    
     let tentaComp = 0;
-    for(let c = 0; c < numCiclosExtras && tentaComp < 50; c++){
+    for(let c = 0, maxim=0; c < numCiclosExtras && maxim < 1000 && tentaComp < 50; c++, maxim++){
         let a, b, tent = 0;
 
         let noComp = rand() % salas.length;
@@ -202,14 +205,17 @@ function gerarMapa(seed) {
         }
         tentaComp = 0;
         
-        const regiao = Array.from(acessiveis);
-        const conectados = new Set();
+        let regiao = Array.from(acessiveis);
+        let conectados = new Set();
 
         do {
             a = regiao[rand() % regiao.length];
             b = regiao[rand() % regiao.length];
+            tent += 1;
+            if(tent > 1000) break;
         } while ((a === b || conectados.has(`${a},${b}`) || conectados.has(`${b},${a}`) ||
-                 salas[a].vizinhas.some(v => v.sala.id === b)) && ++tent < 50);
+                 salas[a].vizinhas.some(v => v.sala.id === b)) && tent < 500);
+        
         if (tent < 50) {
             salas[a].conectar(salas[b]);
             conectados.add(`${a},${b}`);
@@ -218,22 +224,22 @@ function gerarMapa(seed) {
 
     // 4. Escolher sala final:
     
-    const ultimaPorta = portas[portas.length - 1]; // Usa a última porta criada como entrada para o ramo final
+    let ultimaPorta = portas[portas.length - 1]; // Usa a última porta criada como entrada para o ramo final
     // componente inacessível sem chave da última porta
-    const { acessiveis: antesFinal } = bfs(salas, 0, new Set(Array.from(travas).filter(id => id !== ultimaPorta.chaveId)));
-    const ladoFinal = salas.map(s => s.id) .filter(id => !antesFinal.has(id));  // salas do outro lado
+    let { acessiveis: antesFinal } = bfs(salas, 0, new Set(Array.from(travas).filter(id => id !== ultimaPorta.chaveId)));
+    let ladoFinal = salas.map(s => s.id) .filter(id => !antesFinal.has(id));  // salas do outro lado
     
     let salaFinal = ladoFinal[0]; // escolhe a mais distante dentro do ramo final
     let maxP = -1;
-    const profFinal = bfs(salas, ultimaPorta.b, travas).profundidade;
+    let profFinal = bfs(salas, ultimaPorta.b, travas).profundidade;
     
-    for (const id of ladoFinal) {
+    for (let id of ladoFinal) {
         if (profFinal[id] > maxP) { maxP = profFinal[id]; salaFinal = id; }
     }
     salas[salaFinal].final = true;
 
     // 5. pra marcar a profundidade de cada sala
-    const profGeral = bfs(salas, 0).profundidade;
+    let profGeral = bfs(salas, 0).profundidade;
 
     // 6. Classificar tipos de sala
     salas.forEach(sala => {
@@ -255,19 +261,23 @@ function gerarMapa(seed) {
 }
 
 function atribuirBiomas(salas, rand, numCentros = 4) {
-    var fila = []; // Escolhe algumas salas aleatórias como centros de bioma
-    const visitados = new Set();
+    let fila = []; // Escolhe algumas salas aleatórias como centros de bioma
+    let visitados = new Set();
     
-    while(fila.length < numCentros && fila.length < salas.length){
-        const idx = rand() % salas.length;
+    let itera = 0;
+    while(fila.length < numCentros && fila.length < salas.length && itera < 1000){
+        itera += 1;
+        let idx = rand() % salas.length;
         if(visitados.has(idx)) continue;
         salas[idx].bioma = TIPOS_BIOMAS[rand() % TIPOS_BIOMAS.length];
         fila.push(idx);
         visitados.add(idx);
     }
 
-    while(fila.length > 0){
+    itera = 0;
+    while(fila.length > 0 && itera < 1000){
         const idx = fila.shift();
+        itera+=1;
         for(const vizinha of salas[idx].vizinhas){
             if(!visitados.has(vizinha.sala.id)){
                 visitados.add(vizinha.sala.id);
@@ -316,9 +326,9 @@ function generateMap(sala, rand){
     let portasCandidatas = getDoorPositions(sala.map, sala.vizinhas.length, rand);
 
     // Garante alinhamento 1:1 entre vizinhas e portas pelo índice
-    const portasAlocadas = sala.vizinhas.map((_, i) => portasCandidatas[i] || portasCandidatas[i % Math.max(1, portasCandidatas.length)] || { x: 1, y: 1 });
+    let portasAlocadas = sala.vizinhas.map((_, i) => portasCandidatas[i] || portasCandidatas[i % Math.max(1, portasCandidatas.length)] || { x: 1, y: 1 });
 
-    for (const {x, y} of portasAlocadas) sala.map[y][x] = TILES.DOOR;
+    for (let {x, y} of portasAlocadas) sala.map[y][x] = TILES.DOOR;
     sala.portas = portasAlocadas;
 }
 
@@ -334,19 +344,28 @@ function getDoorPositions(map, P, rand) {
         }
         if (start) break;
     }
-    if (!start) return [];
+    if (!start){
+        for (let y = 1; y < H; y++) {
+            for (let x = 1; x < W; x++) {
+                if (floorTiles.has(map[y][x])) { start = [y, x]; break; }
+            }
+            if (start) break;
+        }
+    }
 
     // BFS para marcar área navegável
-    const visited = Array.from({ length: H }, () => Array(W).fill(false));
-    const queue = [start];
+    let visited = Array.from({ length: H }, () => Array(W).fill(false));
+    let queue = [start];
     visited[start[0]][start[1]] = true;
-    const floorSet = new Set([start.toString()]);
-    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    let floorSet = new Set([start.toString()]);
+    let dirs = [[1,0],[-1,0],[0,1],[0,-1]];
 
-    while (queue.length) {
-        const [y, x] = queue.shift();
-        for (const [dy, dx] of dirs) {
-            const ny = y + dy, nx = x + dx;
+    let repete = 0;
+    while (queue.length && repete < 1000) {
+        let [y, x] = queue.shift();
+        repete += 1;
+        for (let [dy, dx] of dirs) {
+            let ny = y + dy, nx = x + dx;
             if (ny >= 0 && ny < H && nx >= 0 && nx < W && !visited[ny][nx] && floorTiles.has(map[ny][nx])) {
                 visited[ny][nx] = true;
                 floorSet.add([ny, nx].toString());
@@ -356,12 +375,12 @@ function getDoorPositions(map, P, rand) {
     }
 
     // candidatos: wallTiles adjacente a floorSet
-    const candidates = [];
+    let candidates = [];
     for (let y = 0; y < H; y++) {
         for (let x = 0; x < W; x++) {
             if (!wallTiles.has(map[y][x])) continue;
-            for (const [dy, dx] of dirs) {
-                const ny = y + dy, nx = x + dx;
+            for (let [dy, dx] of dirs) {
+                let ny = y + dy, nx = x + dx;
                 if (ny >= 0 && ny < H && nx >= 0 && nx < W && floorSet.has([ny, nx].toString())) {
                     candidates.push({ x, y });
                     break;
@@ -371,14 +390,19 @@ function getDoorPositions(map, P, rand) {
     }
 
     // sample P únicos
-    const result = [];
-    const used = new Set();
-    if (candidates.length <= P) return candidates;
+    let result = [];
+    let used = new Set();
+    if (candidates.length <= P){
+        console.log("NAO ACHOU LUGAR PRA PORTA");
+        return candidates;
+    } 
 
-    while (result.length < P) {
-        const idx = rand() % candidates.length;
-        const { x, y } = candidates[idx];
-        const key = `${x},${y}`;
+    let tenta = 0;
+    while (result.length < P && tenta < 1000) {
+        tenta += 1;
+        let idx = rand() % candidates.length;
+        let { x, y } = candidates[idx];
+        let key = `${x},${y}`;
         if (!used.has(key)) {
             used.add(key);
             result.push({ x, y });
@@ -396,8 +420,8 @@ function getDoorPositions(map, P, rand) {
 
 /////////// MAPAS ////////////////
 function addWallBorder(map) {
-    const H = map.length;
-    const W = map[0].length;
+    let H = map.length;
+    let W = map[0].length;
     map[0] = Array(W).fill(TILES.WALL);
     map[H - 1] = Array(W).fill(TILES.WALL);
     for (let y = 1; y < H - 1; y++) {
@@ -417,7 +441,7 @@ function generateCaveMap(rand, H, W) {
             map[y][x] = (rand() % 100 < 45) ? TILES.WALL : TILES.FLOOR;
     // iterar smoothing
     for (let iter = 0; iter < 5; iter++) {
-        const tmp = map.map(row => [...row]);
+        let tmp = map.map(row => [...row]);
         for (let y = 1; y < H - 1; y++) {
             for (let x = 1; x < W - 1; x++) {
                 let walls = 0;
@@ -443,7 +467,7 @@ function generateForestMap(rand, H, W) {
     }
     // 2. Suavização (smoothing)
     for (let iter = 0; iter < 5; iter++) {
-        const tmp = map.map(row => [...row]);
+        let tmp = map.map(row => [...row]);
         for (let y = 1; y < H - 1; y++) {
             for (let x = 1; x < W - 1; x++) {
                 let floorCount = 0;
@@ -455,8 +479,8 @@ function generateForestMap(rand, H, W) {
         map = tmp;
     }
     // 3. Conectividade
-    const visited = Array.from({ length: H }, () => Array(W).fill(false));
-    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    let visited = Array.from({ length: H }, () => Array(W).fill(false));
+    let dirs = [[1,0],[-1,0],[0,1],[0,-1]];
     // encontre ponto inicial
     let start = null;
     for (let y = 1; y < H - 1 && !start; y++) {
@@ -465,12 +489,14 @@ function generateForestMap(rand, H, W) {
         }
     }
     if (start) {
-        const queue = [start]; visited[start[0]][start[1]] = true;
         // flood fill
-        while (queue.length) {
-            const [y, x] = queue.shift();
-            for (const [dy, dx] of dirs) {
-                const ny = y + dy, nx = x + dx;
+        let queue = [start]; visited[start[0]][start[1]] = true;
+        let cnt = 0;
+        while (queue.length && cnt < 1000) {
+            cnt += 1;
+            let [y, x] = queue.shift();
+            for (let [dy, dx] of dirs) {
+                let ny = y + dy, nx = x + dx;
                 if (ny > 0 && ny < H-1 && nx > 0 && nx < W-1 && !visited[ny][nx] && map[ny][nx] === TILES.FLOOR) {
                     visited[ny][nx] = true;
                     queue.push([ny, nx]);
@@ -483,7 +509,9 @@ function generateForestMap(rand, H, W) {
                 if (map[y][x] === TILES.FLOOR && !visited[y][x]) {
                     let cy = y, cx = x;
                     // carve manhattan até start
-                    while (!visited[cy][cx]) {
+                    let maximo = 2000;
+                    while (!visited[cy][cx] && maximo > 0) {
+                        maximo -= 1;
                         if (Math.abs(cy - start[0]) > Math.abs(cx - start[1])) {
                             cy += (start[0] > cy ? 1 : -1);
                         } else {
@@ -502,13 +530,13 @@ function generateForestMap(rand, H, W) {
 
 // Pântano com água e ilhas conectadas por lama
 function generateSwampMap(rand, H, W) {
-    const map = Array.from({ length: H }, () => Array(W).fill(TILES.MUD));
-    const lakes = 2 + (rand() % 3);
-    const waterCenters = [];
+    let map = Array.from({ length: H }, () => Array(W).fill(TILES.MUD));
+    let lakes = 2 + (rand() % 3);
+    let waterCenters = [];
     for (let i = 0; i < lakes; i++) {
-        const r = 2 + (rand() % 3);
-        const cx = r + (rand() % (W - 2 * r));
-        const cy = r + (rand() % (H - 2 * r));
+        let r = 2 + (rand() % 3);
+        let cx = r + (rand() % (W - 2 * r));
+        let cy = r + (rand() % (H - 2 * r));
         waterCenters.push({ cx, cy, r });
         for (let y = -r; y <= r; y++)
             for (let x = -r; x <= r; x++)
@@ -517,14 +545,18 @@ function generateSwampMap(rand, H, W) {
     }
     // Add mud bridges between water pools
     for (let i = 0; i < waterCenters.length - 1; i++) {
-        const a = waterCenters[i], b = waterCenters[i + 1];
+        let a = waterCenters[i], b = waterCenters[i + 1];
         let x1 = a.cx, y1 = a.cy;
-        const x2 = b.cx, y2 = b.cy;
-        while (x1 !== x2) {
+        let x2 = b.cx, y2 = b.cy;
+        let repet = 0;
+        while (x1 !== x2 && repet < 1000) {
+            repet += 1;
             map[y1][x1] = TILES.MUD;
             x1 += x2 > x1 ? 1 : -1;
         }
-        while (y1 !== y2) {
+        repet = 0;
+        while (y1 !== y2 && repet < 1000) {
+            repet += 1;
             map[y1][x1] = TILES.MUD;
             y1 += y2 > y1 ? 1 : -1;
         }
@@ -534,22 +566,22 @@ function generateSwampMap(rand, H, W) {
 
 // Deserto com dunas e ruínas conectadas
 function generateDesertMap(rand, H, W) {
-    const map = Array.from({ length: H }, () => Array(W).fill(TILES.SAND));
-    const dunes = 3 + (rand() % 3);
+    let map = Array.from({ length: H }, () => Array(W).fill(TILES.SAND));
+    let dunes = 3 + (rand() % 3);
     for (let i = 0; i < dunes; i++) {
-        const r = 1 + (rand() % 3);
-        const cx = Math.floor(rand() % W);
-        const cy = Math.floor(rand() % H);
+        let r = 1 + (rand() % 3);
+        let cx = Math.floor(rand() % W);
+        let cy = Math.floor(rand() % H);
         for (let y = -r; y <= r; y++)
             for (let x = -r; x <= r; x++)
                 if (x * x + y * y <= r * r && cy + y >= 0 && cy + y < H && cx + x >= 0 && cx + x < W)
                     map[cy + y][cx + x] = TILES.ROCK;
     }
-    const ruins = 2 + (rand() % 3);
+    let ruins = 2 + (rand() % 3);
     for (let i = 0; i < ruins; i++) {
-        const rw = 3 + (rand() % 4), rh = 3 + (rand() % 4);
-        const rx = Math.floor(rand() % (W - rw));
-        const ry = Math.floor(rand() % (H - rh));
+        let rw = 3 + (rand() % 4), rh = 3 + (rand() % 4);
+        let rx = Math.floor(rand() % (W - rw));
+        let ry = Math.floor(rand() % (H - rh));
         for (let y = ry; y < ry + rh; y++) {
             for (let x = rx; x < rx + rw; x++) {
                 map[y][x] = (y === ry || y === ry + rh - 1 || x === rx || x === rx + rw - 1)
@@ -557,7 +589,7 @@ function generateDesertMap(rand, H, W) {
             }
         }
         // place door
-        const side = rand() % 4;
+        let side = rand() % 4;
         if (side === 0) map[ry][rx + 1 + rand() % (rw - 2)] = TILES.FLOOR;
         if (side === 1) map[ry + rh - 1][rx + 1 + rand() % (rw - 2)] = TILES.FLOOR;
         if (side === 2) map[ry + 1 + rand() % (rh - 2)][rx] = TILES.FLOOR;
@@ -568,9 +600,9 @@ function generateDesertMap(rand, H, W) {
 
 // Ruínas com salas e corredores simétricos
 function generateRuinsMap(rand, H, W) {
-    const map = Array.from({ length: H }, () => Array(W).fill(TILES.BRICK));
-    const rooms = [];
-    const half = Math.floor(W / 2);
+    let map = Array.from({ length: H }, () => Array(W).fill(TILES.BRICK));
+    let rooms = [];
+    let half = Math.floor(W / 2);
     // Generate rooms in left half
     for (let i = 0; i < 5; i++) {
         const rw = 3 + (rand() % 4);
@@ -594,14 +626,15 @@ function generateRuinsMap(rand, H, W) {
         }
     });
     // connect room centers
-    const centers = rooms.map(r => ({ x: r.rx + Math.floor(r.rw/2), y: r.ry + Math.floor(r.rh/2) }));
+    let centers = rooms.map(r => ({ x: r.rx + Math.floor(r.rw/2), y: r.ry + Math.floor(r.rh/2) }));
     centers.forEach(c => centers.push({ x: W-1 - c.x, y: c.y }));
     centers.sort((a,b) => a.x - b.x);
     for (let i = 0; i < centers.length -1; i++) {
         let x1 = centers[i].x, y1 = centers[i].y;
-        const x2 = centers[i+1].x, y2 = centers[i+1].y;
-        while (x1 !== x2) { x1 += x2>x1?1:-1; map[y1][x1] = TILES.FLOOR; }
-        while (y1 !== y2) { y1 += y2>y1?1:-1; map[y1][x1] = TILES.FLOOR; }
+        let x2 = centers[i+1].x, y2 = centers[i+1].y;
+        let repete = 0;
+        while (x1 !== x2 && repete < 1000) { x1 += x2>x1?1:-1; map[y1][x1] = TILES.FLOOR; repete += 1; }
+        while (y1 !== y2 && repete < 1000) { y1 += y2>y1?1:-1; map[y1][x1] = TILES.FLOOR; repete += 1; }
     }
     return map;
 }
