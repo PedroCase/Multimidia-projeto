@@ -335,53 +335,55 @@ function generateMap(sala, rand){
 function getDoorPositions(map, P, rand) {
     const H = map.length;
     const W = map[0].length;
-
-    // encontra um ponto de piso para BFS
-    let start = null;
-    for (let y = Math.floor(H/2); y < H; y++) {
-        for (let x = Math.floor(W/2); x < W; x++) {
-            if (floorTiles.has(map[y][x])) { start = [y, x]; break; }
-        }
-        if (start) break;
-    }
-    if (!start){
-        for (let y = 1; y < H; y++) {
-            for (let x = 1; x < W; x++) {
-                if (floorTiles.has(map[y][x])) { start = [y, x]; break; }
-            }
-            if (start) break;
-        }
-    }
-
-    // BFS para marcar área navegável
-    let visited = Array.from({ length: H }, () => Array(W).fill(false));
-    let queue = [start];
-    visited[start[0]][start[1]] = true;
-    let floorSet = new Set([start.toString()]);
     let dirs = [[1,0],[-1,0],[0,1],[0,-1]];
 
-    let repete = 0;
-    while (queue.length && repete < 1000) {
-        let [y, x] = queue.shift();
-        repete += 1;
-        for (let [dy, dx] of dirs) {
-            let ny = y + dy, nx = x + dx;
-            if (ny >= 0 && ny < H && nx >= 0 && nx < W && !visited[ny][nx] && floorTiles.has(map[ny][nx])) {
-                visited[ny][nx] = true;
-                floorSet.add([ny, nx].toString());
-                queue.push([ny, nx]);
+    // 1. Encontrar todos os componentes conexos de chão
+    let visited = Array.from({ length: H }, () => Array(W).fill(false));
+    let components = [];
+
+    for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+            if (!visited[y][x] && floorTiles.has(map[y][x])) {
+                // BFS para encontrar este componente
+                const comp = [];
+                const queue = [[y, x]];
+                visited[y][x] = true;
+                while (queue.length) {
+                    const [cy, cx] = queue.shift();
+                    comp.push([cy, cx]);
+                    for (const [dy, dx] of dirs) {
+                        const ny = cy + dy, nx = cx + dx;
+                        if (ny >= 0 && ny < H && nx >= 0 && nx < W &&
+                            !visited[ny][nx] && floorTiles.has(map[ny][nx])) {
+                            visited[ny][nx] = true;
+                            queue.push([ny, nx]);
+                        }
+                    }
+                }
+                components.push(comp);
             }
         }
     }
 
-    // candidatos: wallTiles adjacente a floorSet
+    if (components.length === 0) {
+        console.warn("Nenhum componente de piso encontrado!");
+        return [];
+    }
+
+    // 2. Escolher o maior componente
+    let largest = components.reduce((a, b) => (b.length > a.length ? b : a));
+
+    // 3. Gerar conjunto para acesso rápido
+    let floorSet = new Set(largest.map(([y, x]) => `${y},${x}`));
+
+    // 4. Candidatos = tiles de parede adjacentes ao maior componente
     let candidates = [];
     for (let y = 0; y < H; y++) {
         for (let x = 0; x < W; x++) {
             if (!wallTiles.has(map[y][x])) continue;
-            for (let [dy, dx] of dirs) {
-                let ny = y + dy, nx = x + dx;
-                if (ny >= 0 && ny < H && nx >= 0 && nx < W && floorSet.has([ny, nx].toString())) {
+            for (const [dy, dx] of dirs) {
+                const ny = y + dy, nx = x + dx;
+                if (floorSet.has(`${ny},${nx}`)) {
                     candidates.push({ x, y });
                     break;
                 }
@@ -389,17 +391,17 @@ function getDoorPositions(map, P, rand) {
         }
     }
 
-    // sample P únicos
+    // 5. Escolher P posições únicas aleatórias
+    if (candidates.length <= P) {
+        console.warn("Poucos lugares para porta encontrados:", candidates.length);
+        return candidates;
+    }
+
     let result = [];
     let used = new Set();
-    if (candidates.length <= P){
-        console.log("NAO ACHOU LUGAR PRA PORTA");
-        return candidates;
-    } 
-
     let tenta = 0;
     while (result.length < P && tenta < 1000) {
-        tenta += 1;
+        tenta++;
         let idx = rand() % candidates.length;
         let { x, y } = candidates[idx];
         let key = `${x},${y}`;
@@ -408,12 +410,9 @@ function getDoorPositions(map, P, rand) {
             result.push({ x, y });
         }
     }
+
     return result;
 }
-
-
-
-
 
 
 ///////////////////////////////////

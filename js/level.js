@@ -4,6 +4,7 @@ import { addLog, showModal } from './ui.js';
 
 export function initLevel() {
   const seed = Math.floor(Date.now() / 10);
+  console.log("seed: ", seed);
   salas = gerarMapa(seed); // do arquivo original (não alterado)
   currentSala = 0;
   loadSala(0);
