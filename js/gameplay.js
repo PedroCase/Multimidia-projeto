@@ -312,7 +312,7 @@ export function applyItemEffect(item) {
     playerState.hp = Math.min(playerState.maxHp, playerState.hp + item.effect.heal);
     addLog(`Você recuperou ${playerState.hp - before} HP.`);
   }
-  if (item.effect.shield !== playerState.equippedItem.effect.shield) { if (item.effect.shield == true) { playerState.maxHp = Math.ceil(playerState.maxHp * 1.2); playerState.hp = Math.ceil(playerState.hp * 1.2); } else { playerState.maxHp = Math.ceil(playerState.maxHp * (5/6)); playerState.hp = Math.ceil(playerState.hp * (5/6)); } }
+  if (item.type === "equipamento" && item.effect.shield !== playerState.equippedItem.effect.shield) { if (item.effect.shield == true) { playerState.maxHp = Math.ceil(playerState.maxHp * 1.2); playerState.hp = Math.ceil(playerState.hp * 1.2); } else { playerState.maxHp = Math.ceil(playerState.maxHp * (5/6)); playerState.hp = Math.ceil(playerState.hp * (5/6)); } }
   if (item.effect.attackPattern) playerState.attackPattern = item.effect.attackPattern;
   updateUI();
 }
