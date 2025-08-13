@@ -4,31 +4,31 @@ import { gameOver, loadSala, saveCurrentSalaState } from './level.js';
 
 function getFloorPositions() {
   let floorPositions = [];
-  let X0 = -1, Y0 =-1;
+  let X0 = -1, Y0 = -1;
   for (let y = 0; y < MAP_HEIGHT_TILES; y++) {
     for (let x = 0; x < MAP_WIDTH_TILES; x++) {
       if (floorTiles.has(map[y][x])) floorPositions.push({ x, y });
-      if(map[y][x] === TILES.CLOSED_DOOR || map[y][x] == TILES.DOOR) X0 = x, Y0 = y;
+      if (map[y][x] === TILES.CLOSED_DOOR || map[y][x] == TILES.DOOR) X0 = x, Y0 = y;
     }
   }
 
-  if(X0 == -1) return floorPositions;
+  if (X0 == -1) return floorPositions;
 
   floorPositions = [];
   const queue = [[Y0, X0]];
-  let dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+  let dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
   let visited = Array.from({ length: MAP_HEIGHT_TILES }, () => Array(MAP_WIDTH_TILES).fill(false));
   while (queue.length) {
-      const [cy, cx] = queue.shift();
-      for (const [dy, dx] of dirs) {
-          const ny = cy + dy, nx = cx + dx;
-          if (ny >= 0 && ny < MAP_HEIGHT_TILES && nx >= 0 && nx < MAP_WIDTH_TILES 
-            && !visited[ny][nx] && floorTiles.has(map[ny][nx])) {
-              visited[ny][nx] = true;
-              queue.push([ny, nx]);
-              if (floorTiles.has(map[ny][nx])) floorPositions.push({ x:nx, y:ny });
-          }
+    const [cy, cx] = queue.shift();
+    for (const [dy, dx] of dirs) {
+      const ny = cy + dy, nx = cx + dx;
+      if (ny >= 0 && ny < MAP_HEIGHT_TILES && nx >= 0 && nx < MAP_WIDTH_TILES
+        && !visited[ny][nx] && floorTiles.has(map[ny][nx])) {
+        visited[ny][nx] = true;
+        queue.push([ny, nx]);
+        if (floorTiles.has(map[ny][nx])) floorPositions.push({ x: nx, y: ny });
       }
+    }
   }
 
   console.log(floorPositions)
@@ -37,7 +37,7 @@ function getFloorPositions() {
 
 export function placeEntities() {
   const floorPositions = getFloorPositions();
-  
+
   // garante que o player vai estar na mesma componente das portas
   const playerPos = getDoorPositions(map, 1, RandomSeed(12))[0];
   player = { x: playerPos.x, y: playerPos.y, isAttacking: false, attackTimer: 0 };
@@ -157,12 +157,12 @@ export function movePlayer(dx, dy) {
     checkNpcInteraction();
     moveEnemies();
     updateUI();
-  } 
+  }
   else if (targetTile === TILES.DOOR) {
     // Porta pode ser trancada ou não; usar mapeamento por porta->vizinha
     const viz = salas[currentSala].getVizinha(newX, newY);
     const outroLado = viz.sala.getPortaToViz(currentSala);
-    
+
     // Porta destrancada: transita sem consumir chave
     const prevSala = currentSala;
     currentSala = viz.sala.id;
@@ -172,50 +172,49 @@ export function movePlayer(dx, dy) {
     addLog(`Você atravessou a porta para a sala ${viz.sala.id}.`);
     updateUI();
     return;
-  } 
-  else if(targetTile === TILES.CLOSED_DOOR)
-  {
+  }
+  else if (targetTile === TILES.CLOSED_DOOR) {
     const viz = salas[currentSala].getVizinha(newX, newY);
     const outroLado = viz.sala.getPortaToViz(currentSala);
 
-      if (playerState.keys > 0) {
-        // Abrir porta na sala atual
-        map[newY][newX] = TILES.DOOR;
+    if (playerState.keys > 0) {
+      // Abrir porta na sala atual
+      map[newY][newX] = TILES.DOOR;
+      if (!salas[currentSala]._state) salas[currentSala]._state = { openDoors: [] };
+      salas[currentSala]._state.openDoors = Array.from(new Set([...(salas[currentSala]._state.openDoors || []).map(p => `${p.x},${p.y}`), `${newX},${newY}`])).map(s => ({ x: +s.split(',')[0], y: +s.split(',')[1] }));
+
+      // Salva estado e consome chave
+      saveCurrentSalaState();
+      playerState.keys--;
+
+      // Transição
+      const prevSala = currentSala;
+      currentSala = viz.sala.id;
+      loadSala(currentSala);
+      if (audioInitialized) sounds.door.triggerAttackRelease("8n");
+
+      // Abre a porta correspondente na sala de destino
+      if (outroLado) {
+        map[outroLado.y][outroLado.x] = TILES.DOOR;
         if (!salas[currentSala]._state) salas[currentSala]._state = { openDoors: [] };
-        salas[currentSala]._state.openDoors = Array.from(new Set([...(salas[currentSala]._state.openDoors || []).map(p => `${p.x},${p.y}`), `${newX},${newY}`])).map(s => ({ x: +s.split(',')[0], y: +s.split(',')[1] }));
-
-        // Salva estado e consome chave
+        salas[currentSala]._state.openDoors = Array.from(new Set([...(salas[currentSala]._state.openDoors || []).map(p => `${p.x},${p.y}`), `${outroLado.x},${outroLado.y}`])).map(s => ({ x: +s.split(',')[0], y: +s.split(',')[1] }));
         saveCurrentSalaState();
-        playerState.keys--;
-
-        // Transição
-        const prevSala = currentSala;
-        currentSala = viz.sala.id;
-        loadSala(currentSala);
-        if (audioInitialized) sounds.door.triggerAttackRelease("8n");
-
-        // Abre a porta correspondente na sala de destino
-        if (outroLado) {
-          map[outroLado.y][outroLado.x] = TILES.DOOR;
-          if (!salas[currentSala]._state) salas[currentSala]._state = { openDoors: [] };
-          salas[currentSala]._state.openDoors = Array.from(new Set([...(salas[currentSala]._state.openDoors || []).map(p => `${p.x},${p.y}`), `${outroLado.x},${outroLado.y}`])).map(s => ({ x: +s.split(',')[0], y: +s.split(',')[1] }));
-          saveCurrentSalaState();
-        }
-
-        if (salas[currentSala].final) {
-          addLog("Você usou a 🔑 e foi para outro mundo!!!");
-          initLevel();
-        } else {
-          addLog(`Você usou a 🔑 e entrou na sala ${viz.sala.id}!!!`);
-        }
-
-        // Posição do jogador no outro lado
-        if (outroLado) { player.x = outroLado.x; player.y = outroLado.y; }
-        updateUI();
-        return;
       }
-      addLog("A 🚪 está trancada. Encontre a 🔑.");
+
+      if (salas[currentSala].final) {
+        addLog("Você usou a 🔑 e foi para outro mundo!!!");
+        initLevel();
+      } else {
+        addLog(`Você usou a 🔑 e entrou na sala ${viz.sala.id}!!!`);
+      }
+
+      // Posição do jogador no outro lado
+      if (outroLado) { player.x = outroLado.x; player.y = outroLado.y; }
+      updateUI();
       return;
+    }
+    addLog("A 🚪 está trancada. Encontre a 🔑.");
+    return;
   }
 }
 
@@ -307,7 +306,7 @@ export function applyItemEffect(item) {
     playerState.hp = Math.min(playerState.maxHp, playerState.hp + item.effect.heal);
     addLog(`Você recuperou ${playerState.hp - before} HP.`);
   }
-  if (item.effect.maxHp) { if (playerState.maxHp > item.effect.maxHp) {playerState.maxHp = item.effect.maxHp; playerState.hp = Math.min(playerState.maxHp, playerState.hp);} else {playerState.hp = Math.min(item.effect.maxHp, playerState.hp + (item.effect.maxHp - playerState.maxHp)); playerState.maxHp = item.effect.maxHp; }}
+  if (item.effect.maxHp) { if (playerState.maxHp > item.effect.maxHp) { playerState.maxHp = item.effect.maxHp; playerState.hp = Math.min(playerState.maxHp, playerState.hp); } else { playerState.hp = Math.min(item.effect.maxHp, playerState.hp + (item.effect.maxHp - playerState.maxHp)); playerState.maxHp = item.effect.maxHp; } }
   if (item.effect.attackPattern) playerState.attackPattern = item.effect.attackPattern;
   updateUI();
 }
@@ -542,7 +541,7 @@ export function playerAttack() {
       hit = true;
       if (enemy.hp <= 0) {
         addLog(`Inimigo (${enemy.symbol}) derrotado!`);
-        playerState.attack *= 1.1;
+        playerState.attack += 0.1;
         playerState.hp = Math.min(playerState.hp + 2, 100);
         enemyDefeated = true;
         if (enemy.type === 'BOSS') showModal("O CHEFE 🐲 foi derrotado! O labirinto parece tremer em alívio.", false);
