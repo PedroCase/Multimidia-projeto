@@ -39,11 +39,12 @@ export function updateUI() {
       if (item.type === 'consumivel') {
         const useBtn = document.createElement('button');
         useBtn.textContent = 'Usar';
-        equipBtn.style.fontFamily = "'Press Start 2P', cursive";
+        useBtn.style.fontFamily = "'Press Start 2P', cursive";
         useBtn.title = 'Usar item (consome um turno)';
         useBtn.addEventListener('click', (e) => { e.stopPropagation(); useInventoryItem(idx); });
         controls.appendChild(useBtn);
       }
+
       if (item.type === 'equipamento') {
         const equipBtn = document.createElement('button');
         equipBtn.textContent = 'Equipar';
@@ -83,13 +84,12 @@ export function addLog(message) {
   updateUI();
 }
 
-export function showModal(text, isGameOver = false) {
+export function showModal(text) {
   modalTextEl.textContent = text;
   modalEl.style.display = 'flex';
   const closeHandler = () => {
     modalEl.style.display = 'none';
     modalButton.removeEventListener('click', closeHandler);
-    if (isGameOver) resetGame();
   };
   modalButton.addEventListener('click', closeHandler);
 }
