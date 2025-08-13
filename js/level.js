@@ -31,16 +31,6 @@ export function loadSala(id) {
       const { x, y } = sala._state.key.pos;
       map[y][x] = TILES.KEY;
     }
-
-    // Mantém portas que já foram abertas como piso
-    if (Array.isArray(sala._state.openDoors)) {
-      for (const pos of sala._state.openDoors) {
-        const { x, y } = pos;
-        if (y >= 0 && y < MAP_HEIGHT_TILES && x >= 0 && x < MAP_WIDTH_TILES) {
-          map[y][x] = TILES.FLOOR;
-        }
-      }
-    }
   } else {
     // Primeira visita: gera entidades e salva estado inicial
     placeEntities();

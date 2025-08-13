@@ -255,7 +255,7 @@ function gerarMapa(seed) {
 }
 
 function atribuirBiomas(salas, rand, numCentros = 4) {
-    const fila = []; // Escolhe algumas salas aleatórias como centros de bioma
+    var fila = []; // Escolhe algumas salas aleatórias como centros de bioma
     const visitados = new Set();
     
     while(fila.length < numCentros && fila.length < salas.length){
