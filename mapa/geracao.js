@@ -2,10 +2,10 @@
 
 // Gera um inteiro aleatório entre 0 e 2^32-1
 function RandomSeed(seed) {
-    let m = 1000000007, a = 998244353, c = 1013904223, d = 35436, state = seed;
+    let m = 1000000009, a = 998244353, c = 1013904223, d = 35436, state = seed;
     return function() {
         state = (a * state + (c^state^d)) % m;
-        return state;
+        return Math.floor(Math.random()*m);
     };
 }
 function rangeRandom(l, r, rand){ return l + rand()%(r-l+1); }
