@@ -42,6 +42,7 @@ export function draw() {
       const centerY = y * TILE_SIZE + TILE_SIZE / 2 + 1;
       if (tile === TILES.DOOR) { ctx.fillText('🚪', centerX, centerY); }
       else if (tile === TILES.CLOSED_DOOR) { ctx.fillText('🔒', centerX, centerY); }
+      else if (tile === TILES.BOSS_DOOR) { ctx.fillText('🪜', centerX, centerY); }
       else if (tile === TILES.KEY) { ctx.fillText('🔑', centerX, centerY); }
       else if (tile === TILES.TREE) { let emo = TREE_EMOJIS[Math.floor((213124^x*y^2145325341+63455)%TREE_EMOJIS.length)]; ctx.fillText(emo, centerX, centerY); }
     }
@@ -54,7 +55,7 @@ export function draw() {
 
   npcs.forEach(npc => {
     ctx.font = EMOJI_FONT;
-    ctx.fillText('🧙', npc.x * TILE_SIZE + TILE_SIZE / 2, npc.y * TILE_SIZE + TILE_SIZE / 2 + 1);
+    ctx.fillText('👴', npc.x * TILE_SIZE + TILE_SIZE / 2, npc.y * TILE_SIZE + TILE_SIZE / 2 + 1);
   });
 
   // Vilas são desenhadas a partir do array "villages" para evitar conflito com chaves

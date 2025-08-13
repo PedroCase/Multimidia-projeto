@@ -1,6 +1,6 @@
 // gameplay.js - movimentação, combate e interações
 import { addLog, updateUI, showModal } from './ui.js';
-import { gameOver, loadSala, saveCurrentSalaState } from './level.js';
+import { gameOver, loadSala, saveCurrentSalaState, nextLevel } from './level.js';
 
 function getFloorPositions() {
   let floorPositions = [];
@@ -171,6 +171,12 @@ export function movePlayer(dx, dy) {
     if (outroLado) { player.x = outroLado.x; player.y = outroLado.y; }
     addLog(`Você atravessou a porta para a sala ${viz.sala.id}.`);
     updateUI();
+    return;
+  }
+  else if (targetTile === TILES.BOSS_DOOR) {
+    if (audioInitialized) sounds.door.triggerAttackRelease("8n");
+    addLog("Você atravessa a porta do chefe e avança para o próximo nível!");
+    nextLevel();
     return;
   }
   else if (targetTile === TILES.CLOSED_DOOR) {
@@ -544,7 +550,14 @@ export function playerAttack() {
         playerState.attack += 0.1;
         playerState.hp = Math.min(playerState.hp + 2, 100);
         enemyDefeated = true;
-        if (enemy.type === 'BOSS') showModal("O CHEFE 🐲 foi derrotado! O labirinto parece tremer em alívio.", false);
+        if (enemy.type === 'BOSS') {
+          showModal("O CHEFE 🐲 foi derrotado! O labirinto parece tremer em alívio.", false);
+
+          // Coloca uma porta na posição do boss morto
+          map[enemy.y][enemy.x] = TILES.BOSS_DOOR;
+          // Salva o estado da sala com a nova porta
+          saveCurrentSalaState();
+        }
         enemies.splice(i, 1);
       }
     }

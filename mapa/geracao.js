@@ -24,6 +24,7 @@ const TILES = {
     FLOOR: 1,
     DOOR: 5,
     CLOSED_DOOR: 20,
+    BOSS_DOOR: 21,
     KEY: 6, // adicionado para compatibilidade com o jogo
     TREE: 11,
     WATER: 12,
