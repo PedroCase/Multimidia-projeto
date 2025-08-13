@@ -1,5 +1,6 @@
 // main.js - bootstrap do jogo modular JS puro
 import { gameLoop } from './rendering.js';
+import { applyItemEffect } from './gameplay.js';
 import { initLevel } from './level.js';
 import { setupControls } from './controls.js';
 import { showModal } from './ui.js';
@@ -13,7 +14,7 @@ function bootstrap() {
   hpBarEl = document.getElementById('hp-bar');
   attackValueEl = document.getElementById('attack-value');
   attackPatternEl = document.getElementById('attack-pattern-value');
-  classNameEl = document.getElementById('class-name');
+  equippedItemEl = document.getElementById('equipped-item');
   inventoryListEl = document.getElementById('inventory-list');
   dungeonLevelEl = document.getElementById('dungeon-level');
   logListEl = document.getElementById('log-list');
@@ -30,7 +31,9 @@ function bootstrap() {
   canvas.height = MAP_HEIGHT_TILES * TILE_SIZE;
 
   setupControls();
-
+  if (playerState.equippedItem) {
+    applyItemEffect(playerState.equippedItem);
+  }
   showModal("Bem-vindo ao Labirinto Infinito! Use WASD/Setas para mover e Espaço para atacar.");
   initLevel();
   requestAnimationFrame(gameLoop);

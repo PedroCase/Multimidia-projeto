@@ -72,10 +72,15 @@ export function resetGame() {
   dungeonLevel = 1;
   playerState.maxHp = 100;
   playerState.hp = 100;
+  playerState.equippedItem = { 
+    name: "Espada", 
+    type: "equipamento", 
+    effect: { attack: 5, attackPattern: 'default' }, 
+    symbol: '⚔️' 
+  };
   playerState.attack = 5;
   playerState.inventory = [];
   playerState.keys = 0;
-  playerState.className = "Aventureiro";
   playerState.attackPattern = 'default';
   messageLog.length = 0;
   init();
