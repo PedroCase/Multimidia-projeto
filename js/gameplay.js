@@ -14,12 +14,13 @@ function getFloorPositions() {
 
 export function placeEntities() {
   const floorPositions = getFloorPositions();
-
-  const playerPos = floorPositions.splice(Math.floor(Math.random() * floorPositions.length), 1)[0];
+  
+  // garante que o player vai estar na mesma componente das portas
+  const playerPos = getDoorPositions(map, 1, RandomSeed(12))[0];
   player = { x: playerPos.x, y: playerPos.y, isAttacking: false, attackTimer: 0 };
 
   enemies = [];
-  if (dungeonLevel % 5 === 0) {
+  if (salas[currentSala].final) {
     addLog("Um arrepio percorre sua espinha... Uma presença poderosa está aqui!");
     const pos = floorPositions.splice(Math.floor(Math.random() * floorPositions.length), 1)[0];
     const bossData = ENEMY_TYPES.BOSS;

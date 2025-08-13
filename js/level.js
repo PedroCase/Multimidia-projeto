@@ -75,6 +75,10 @@ export function loadSala(id) {
       }
     }
   }
+
+  if(sala.final){
+    showModal(`Você chegou na sala final! Um desafio lhe aguarda!`);
+  } 
 }
 
 export function nextLevel() {
