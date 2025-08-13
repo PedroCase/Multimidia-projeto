@@ -171,7 +171,7 @@ function chooseFromPalette(type, bioma = null, X = 0, Y = 0) {
 function getTileColor(tile, sala, X = 0, Y = 0) {
   switch (tile) {
     case TILES.WALL:        return chooseFromPalette("wall",  sala.bioma, X, Y) || "#444";
-    case TILES.FLOOR:       return sala.final ? "#121010ff" : (chooseFromPalette("floor", sala.bioma, X, Y) || "#888");
+    case TILES.FLOOR:       return chooseFromPalette("floor", sala.bioma, X, Y) || "#888";
     case TILES.TREE:        return chooseFromPalette("tree",  sala.bioma, X, Y) || "#228b22";
     case TILES.WATER:       return chooseFromPalette("water", sala.bioma, X, Y) || "#2a6b82"
     case TILES.MUD:         return chooseFromPalette("mud",   sala.bioma, X, Y) || "#553333";
@@ -181,8 +181,8 @@ function getTileColor(tile, sala, X = 0, Y = 0) {
     case TILES.RUBBLE:      return chooseFromPalette("floor", sala.bioma, X, Y) || "#888";
     case TILES.LAVA:        return "#cc3300";
     case TILES.ASH:         return "#666";
-    case TILES.DOOR:        return "#d29b48";
-    case TILES.CLOSED_DOOR: return "#b71b1b";
+    case TILES.DOOR:        return chooseFromPalette("wall",  sala.bioma, X, Y) || "#d29b48";
+    case TILES.CLOSED_DOOR: return chooseFromPalette("wall",  sala.bioma, X, Y) || "#b71b1b";
     case TILES.KEY:         return chooseFromPalette("floor", sala.bioma, X, Y) || "#888";
     default:                return "#ff00ff"; // debug
   }
