@@ -23,6 +23,7 @@ function bootstrap() {
   pauseOverlay = document.getElementById('pause-overlay');
   resumeButton = document.getElementById('resume-button');
   pauseButton = document.getElementById('pause-button');
+  restartButton = document.getElementById('restart-button');
 
   // Dimensões iniciais baseadas no estado default
   canvas.width = MAP_WIDTH_TILES * TILE_SIZE;
